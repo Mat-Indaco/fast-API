@@ -1,11 +1,11 @@
 from sqlmodel import SQLModel
 from pydantic import EmailStr
-from pydantic import ConfigDict
 
 
 class Token(SQLModel):
     access_token: str
     token_type: str
+
 
 class UserCreate(SQLModel):
     username: str
@@ -19,6 +19,7 @@ class UserRead(SQLModel):
     username: str
     email: EmailStr
     full_name: str | None = None
+
 
 class UserUpdate(SQLModel):
     username: str | None = None

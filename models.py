@@ -8,4 +8,3 @@ class User(SQLModel, table=True):
     email: EmailStr
     full_name: str | None = None
     hashed_password: str
-
