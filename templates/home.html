@@ -3,74 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Home</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: system-ui, sans-serif; background: #f0f2f5; }
-        .navbar {
-            background: #4f46e5; color: white; padding: 1rem 2rem;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .navbar h1 { font-size: 1.2rem; }
-        .navbar button {
-            background: rgba(255,255,255,0.2); color: white; border: none;
-            padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer;
-        }
-        .container { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
-        .welcome { font-size: 1.5rem; margin-bottom: 1.5rem; color: #333; }
-        .card {
-            background: white; border-radius: 12px; padding: 1.5rem;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 1rem;
-        }
-        .card h2 { color: #4f46e5; margin-bottom: 0.5rem; font-size: 1.1rem; }
-        table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
-        th, td { padding: 0.6rem; text-align: left; border-bottom: 1px solid #eee; }
-        th { color: #666; font-size: 0.85rem; text-transform: uppercase; }
-        .loading { color: #999; font-style: italic; }
-        .admin-panel {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-        }
-        .admin-panel h3 {
-            color: #4f46e5;
-            margin-bottom: 1rem;
-        }
-        .delete-user-box {
-            display: flex;
-            gap: 0.75rem;
-            align-items: center;
-        }
-        .delete-user-box input {
-            flex: 1;
-            padding: 0.7rem;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 0.95rem;
-        }
-        .delete-user-box input:focus {
-            outline: none;
-            border-color: #4f46e5;
-        }
-        .delete-user-box button {
-            background: #ef4444;
-            color: white;
-            border: none;
-            padding: 0.7rem 1rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-        .delete-user-box button:hover {
-            background: #dc2626;
-        }
-        #delete-message {
-            margin-top: 0.75rem;
-            color: #555;
-            font-size: 0.9rem;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/home.css">
 </head>
 <body>
     <nav class="navbar">
@@ -126,35 +59,49 @@
         </div>
 
             <p id="delete-item-message"></p>
-        </div>
+           <div class="create-item-panel">
 
-        <div class="admin-panel">
-        
-            <h3>Crear Item</h3>
-        
-            <div class="create-item-box">
-            
-                <input
-                    type="text"
-                    id="item-title"
-                    placeholder="Título del item"
-                >
-            
-                <input
-                    type="text"
-                    id="item-description"
-                    placeholder="Descripción"
-                >
-            
-                <button onclick="createItem()">
-                    Crear Item
-                </button>
-            
-            </div>
-        
-            <p id="create-item-message"></p>
-        
-        </div>
+    <h3>Crear Item</h3>
+
+    <div class="form-group">
+        <label>Título</label>
+
+        <input
+            type="text"
+            id="item-title"
+            placeholder="Ej: Notebook"
+        >
+    </div>
+
+    <div class="form-group">
+        <label>Cantidad</label>
+
+        <input
+            type="number"
+            id="item-cant"
+            placeholder="Ej: 5"
+        >
+    </div>
+
+    <div class="form-group">
+        <label>Descripción</label>
+
+        <input
+            type="text"
+            id="item-description"
+            placeholder="Descripción opcional"
+        >
+    </div>
+
+    <button class="primary-btn" onclick="createItem()">
+        Crear Item
+    </button>
+
+    <p id="create-item-message"></p>
+
+</div>
+
+    
 
         <div class="card">
             <h2>Items</h2>
@@ -270,7 +217,9 @@
             const message = document.getElementById(
                 'create-item-message'
             );
-            const cant =1 ;
+            const cant = document.getElementById(
+                'item-cant'
+            ).value;
 
             if (!title) {
             
@@ -297,6 +246,7 @@
                             description,
                             cant                        })
                     }
+                    
                 );
                 
                 if (res.ok) {

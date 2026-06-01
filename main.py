@@ -3,12 +3,13 @@ from contextlib import asynccontextmanager
 from db import create_db_and_tables
 
 from fastapi.templating import Jinja2Templates
-
+from fastapi.staticfiles import StaticFiles
 from routers.users import router as users_router
 from routers.items import router as items_router
 from routers.auth import router as auth_router
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="static"), name="static")
 """
 REST API desarrollada con FastAPI.
 
