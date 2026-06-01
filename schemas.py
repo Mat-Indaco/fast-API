@@ -14,21 +14,19 @@ class TokenData(SQLModel):
     username: str | None = None
 
 
-class UserCreate(SQLModel):
+class UserBase(SQLModel):
     username: str
     email: EmailStr
     full_name: str | None = None
-    password: str
     role: UserRole = UserRole.USER
 
 
-class UserRead(SQLModel):
-    id: int
-    username: str
-    email: EmailStr
-    full_name: str | None = None
-    role: UserRole
+class UserCreate(UserBase):
+    password: str
 
+
+class UserRead(UserBase):
+    id: int
 
 class UserUpdate(SQLModel):
     username: str | None = None
@@ -37,14 +35,15 @@ class UserUpdate(SQLModel):
     role: UserRole | None = None
 
 
-
-class ItemCreate(SQLModel):
+class ItemBase(SQLModel):
     title: str
     description: str | None = None
 
 
-class ItemRead(SQLModel):
+class ItemCreate(ItemBase):
+    pass
+
+
+class ItemRead(ItemBase):
     id: int
-    title: str
-    description: str | None = None
     owner_id: int

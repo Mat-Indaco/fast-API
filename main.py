@@ -11,13 +11,13 @@ from routers.auth import router as auth_router
 app = FastAPI()
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    create_db_and_tables()
-    yield
+#@asynccontextmanager
+#async def lifespan(app: FastAPI):
+#    create_db_and_tables()
+#    yield
 
 
-app = FastAPI(lifespan=lifespan)
+#app = FastAPI(lifespan=lifespan)
 
 
 app.include_router(users_router)
