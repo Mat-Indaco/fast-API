@@ -1,14 +1,20 @@
 FROM python:3.12-slim
 
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
 WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
 
-RUN pip install uv
-
-RUN uv sync
+RUN uv sync --no-install-project --f
 
 COPY . .
+
+RUN uv sync --frozen
+
+
+
+
 
 EXPOSE 8000
 
