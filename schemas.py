@@ -3,6 +3,8 @@ from pydantic import EmailStr
 from models import UserRole
 
 
+
+
 class Token(SQLModel):
     access_token: str
     token_type: str
@@ -33,3 +35,16 @@ class UserUpdate(SQLModel):
     email: EmailStr | None = None
     full_name: str | None = None
     role: UserRole | None = None
+
+
+
+class ItemCreate(SQLModel):
+    title: str
+    description: str | None = None
+
+
+class ItemRead(SQLModel):
+    id: int
+    title: str
+    description: str | None = None
+    owner_id: int

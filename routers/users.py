@@ -45,6 +45,12 @@ def read_users(
 def delete_user(
     user_id: int, session: SessionDep, current_user: User = Depends(require_admin)
 ):
+    
+    if current_user.id == user_id:
+        raise HTTPException(
+            status_code=400,
+            detail="No puedes eliminarte a ti mismo"
+        )
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

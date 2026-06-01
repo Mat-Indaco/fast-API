@@ -112,6 +112,22 @@
             <p id="delete-message"></p>
         </div>
 
+        <div class="admin-panel" >
+        <h3>Panel Items</h3>
+        <div class="delete-user-box">
+            <input
+                type="text"
+                id="delete-item-id"
+                placeholder="ID del item"
+            >
+                <button onclick="deleteItem()">
+                Eliminar Item
+                </button>
+        </div>
+
+            <p id="delete-item-message"></p>
+        </div>
+
         <div class="card">
             <h2>Items</h2>
             <div id="items-list" class="loading">Cargando...</div>
@@ -188,6 +204,11 @@
                 } else if(res.status === 404){
                     message.textContent ='No existe ese usuario';
                 }
+                else if (res.status === 400)
+                 {
+                       message.textContent =
+                        'No puedes eliminarte a ti mismo';
+                }
                 else{
                     message.textContent = 'No se pudo eliminar el usuario';
                 } 
@@ -196,6 +217,37 @@
                     'Error eliminando usuario';
             }
         }
+        
+        async function deleteItem() {
+            const itemId = document.getElementById('delete-item-id').value;
+            const message = document.getElementById('delete-item-message');
+            if (!itemId) {message.textContent = 'Ingrese un item';return;}
+            try {
+                const res = await fetch(
+                    `/items/${itemId}`,
+                    {
+                        method: 'DELETE',
+                        headers
+                    }
+                );
+                console.log(res.status);
+                if (res.ok) {
+                
+                    message.textContent =
+                        'Item eliminado correctamente';
+                    loadItems();
+                } else if(res.status === 404){
+                    message.textContent ='No existe un Item con esa ID';
+                }
+                else{
+                    message.textContent = 'No se pudo eliminar el Item';
+                } 
+            } catch(e) {
+                message.textContent =
+                    'Error eliminando Item';
+            }
+        }
+
         function logout() {
             localStorage.removeItem('token');
             window.location.href = '/';
