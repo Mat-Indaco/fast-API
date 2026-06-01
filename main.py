@@ -9,15 +9,25 @@ from routers.items import router as items_router
 from routers.auth import router as auth_router
 
 app = FastAPI()
+"""
+REST API desarrollada con FastAPI.
 
+Features:
+- JWT Authentication
+- Roles de usuario
+- CRUD de usuarios
+- CRUD de items
+- Docker support
+- SQLite database
+"""
 
-#@asynccontextmanager
-#async def lifespan(app: FastAPI):
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
 #    create_db_and_tables()
 #    yield
 
 
-#app = FastAPI(lifespan=lifespan)
+# app = FastAPI(lifespan=lifespan)
 
 
 app.include_router(users_router)

@@ -128,9 +128,44 @@
             <p id="delete-item-message"></p>
         </div>
 
+        <div class="admin-panel">
+        
+            <h3>Crear Item</h3>
+        
+            <div class="create-item-box">
+            
+                <input
+                    type="text"
+                    id="item-title"
+                    placeholder="Título del item"
+                >
+            
+                <input
+                    type="text"
+                    id="item-description"
+                    placeholder="Descripción"
+                >
+            
+                <button onclick="createItem()">
+                    Crear Item
+                </button>
+            
+            </div>
+        
+            <p id="create-item-message"></p>
+        
+        </div>
+
         <div class="card">
             <h2>Items</h2>
-            <div id="items-list" class="loading">Cargando...</div>
+            <table>
+                <thead><tr>
+                    <th>ID</th><th>Nombre</th><th>Cantidad</th>
+                </tr></thead>
+                <tbody id="items-list">
+                    <tr><td colspan="3" class="loading">Cargando...</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -177,7 +212,11 @@
                 const res = await fetch('/items/', { headers });
                 const items = await res.json();
                 document.getElementById('items-list').innerHTML =
-                    items.map(i => `<p>${i.id}. ${i.title}</p>`).join('');
+                    items.map(i => `<tr>
+                        <td>${i.id}</td>
+                        <td>${i.title}</td>
+                        <td>${i.cant}</td>
+                    </tr>`).join('');
             } catch(e) {
                 console.error('Error cargando items:', e);
             }
@@ -215,6 +254,78 @@
             } catch(e) {
                 message.textContent =
                     'Error eliminando usuario';
+            }
+        }
+
+        async function createItem() {
+
+            const title = document.getElementById(
+                'item-title'
+            ).value;
+
+            const description = document.getElementById(
+                'item-description'
+            ).value;
+
+            const message = document.getElementById(
+                'create-item-message'
+            );
+            const cant =1 ;
+
+            if (!title) {
+            
+                message.textContent =
+                    'Ingrese un título';
+            
+                return;
+            }
+        
+            try {
+            
+                const res = await fetch(
+                    '/items/',
+                    {
+                        method: 'POST',
+                    
+                        headers: {
+                            ...headers,
+                            'Content-Type': 'application/json'
+                        },
+                    
+                        body: JSON.stringify({
+                            title,
+                            description,
+                            cant                        })
+                    }
+                );
+                
+                if (res.ok) {
+                
+                    message.textContent =
+                        'Item creado correctamente';
+                
+                    document.getElementById(
+                        'item-title'
+                    ).value = '';
+                
+                    document.getElementById(
+                        'item-description'
+                    ).value = '';
+                
+                    loadItems();
+                
+                } else {
+                
+                    message.textContent =
+                        'No se pudo crear el item';
+                }
+            
+            } catch(e) {
+            
+                console.error(e);
+            
+                message.textContent =
+                    'Error creando item';
             }
         }
         

@@ -16,19 +16,42 @@ router = APIRouter(prefix="/items", tags=["items"])
 # 3) validar que la respuesta es correcta.
 @router.post("/", response_model=ItemRead)
 def create_item(
-    item: ItemCreate,               # FastAPI valida el body con este schema
-    session: SessionDep,             # inyectado: sesión de base de datos
+    item: ItemCreate,  # FastAPI valida el body con este schema
+    session: SessionDep,  # inyectado: sesión de base de datos
     current_user: User = Depends(get_current_user),  # inyectado: usuario logueado
 ):
-    """Crear un nuevo item. El dueño es el usuario autenticado."""
+    """
+    Crea un nuevo item asociado al usuario autenticado.
+
+    El owner del item se asigna automáticamente
+    a partir del token JWT.
+    """
+
+    existing_item = session.exec(
+        select(Item).where(Item.title == item.title, Item.owner_id == current_user.id)
+    ).first()
+
+    # Si el item ya existe → sumar cantidad
+    if existing_item:
+        existing_item.cant += item.cant
+
+        session.add(existing_item)
+
+        session.commit()
+
+        session.refresh(existing_item)
+
+        return existing_item
+
     db_item = Item(
         title=item.title,
         description=item.description,
-        owner_id=current_user.id,    # el dueño es quien está logueado
+        cant=item.cant,
+        owner_id=current_user.id,  # el dueño es quien está logueado
     )
-    session.add(db_item)             # agregar a la sesión de DB
-    session.commit()                 # guardar en la DB (hacer el INSERT)
-    session.refresh(db_item)         # recargar para obtener el id generado
+    session.add(db_item)  # agregar a la sesión de DB
+    session.commit()  # guardar en la DB (hacer el INSERT)
+    session.refresh(db_item)  # recar para obtener el id generado
     return db_item
 
 
@@ -37,20 +60,24 @@ def create_item(
 def list_items(
     session: SessionDep,
     current_user: User = Depends(get_current_user),
-    offset: int = 0,                # parámetro de query: /items/?offset=10
+    offset: int = 0,  # parámetro de query: /items/?offset=10
     limit: int = Query(default=100, le=100),  # le=100 = máximo permitido
 ):
-    """Listar items del usuario autenticado."""
+    """
+    Devuelve los items pertenecientes al usuario autenticado.
+
+    Incluye soporte de paginación mediante:
+    - offset
+    - limit
+    """
     # .where() filtra: solo los items de ESTE usuario
     # .offset() salta N registros (para paginación)
     # .limit() limita la cantidad de resultados
     items = session.exec(
-        select(Item)
-        .where(Item.owner_id == current_user.id)
-        .offset(offset)
-        .limit(limit)
+        select(Item).where(Item.owner_id == current_user.id).offset(offset).limit(limit)
     ).all()
     return items
+
 
 @router.delete("/{item_id}")
 def delete_item(
@@ -64,16 +91,12 @@ def delete_item(
 
     # Verificar que exista
     if not item:
-        raise HTTPException(
-            status_code=404,
-            detail="Item not found"
-        )
+        raise HTTPException(status_code=404, detail="Item not found")
 
     # Verificar ownership
     if item.owner_id != current_user.id:
         raise HTTPException(
-            status_code=403,
-            detail="No tienes permisos para eliminar este item"
+            status_code=403, detail="No tienes permisos para eliminar este item"
         )
 
     session.delete(item)
