@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException
 from typing import Annotated
 from db import SessionDep
 from schemas import UserCreate, UserRead, UserUpdate
 from services import create_user, read_user
 from sqlmodel import select
 from models import User
+from security import get_current_user, require_admin
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -18,7 +19,9 @@ def create_new_user(user: UserCreate, session: SessionDep):
 
 
 @router.get("/{user_id}", response_model=UserRead)
-def get_user(user_id: int, session: SessionDep):
+def get_user(
+    user_id: int, session: SessionDep, current_user: User = Depends(get_current_user)
+):
 
     db_user = read_user(user_id, session)
 
@@ -28,6 +31,7 @@ def get_user(user_id: int, session: SessionDep):
 @router.get("/", response_model=list[UserRead])
 def read_users(
     session: SessionDep,
+    current_user: User = Depends(get_current_user),
     offset: int = 0,
     limit: Annotated[int, Query(le=100)] = 100,
 ):
@@ -38,7 +42,9 @@ def read_users(
 
 
 @router.delete("/{user_id}")
-def delete_user(user_id: int, session: SessionDep):
+def delete_user(
+    user_id: int, session: SessionDep, current_user: User = Depends(require_admin)
+):
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

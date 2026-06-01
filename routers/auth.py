@@ -11,13 +11,16 @@ router = APIRouter(tags=["auth"])
 
 
 @router.post("/login")
-def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(get_session),):
+def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    session: Session = Depends(get_session),
+):
 
     user = authenticate_user(form_data.username, form_data.password, session)
 
     if not user:
         raise HTTPException(status_code=401, detail="Incorrect username or password")
 
-    access_token = create_access_token(data={"sub": user.username})
+    access_token = create_access_token(data={"sub": user.username, "role": user.role})
 
     return {"access_token": access_token, "token_type": "bearer"}

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Home</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: system-ui, sans-serif; background: #f0f2f5; }
+        .navbar {
+            background: #4f46e5; color: white; padding: 1rem 2rem;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .navbar h1 { font-size: 1.2rem; }
+        .navbar button {
+            background: rgba(255,255,255,0.2); color: white; border: none;
+            padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer;
+        }
+        .container { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+        .welcome { font-size: 1.5rem; margin-bottom: 1.5rem; color: #333; }
+        .card {
+            background: white; border-radius: 12px; padding: 1.5rem;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 1rem;
+        }
+        .card h2 { color: #4f46e5; margin-bottom: 0.5rem; font-size: 1.1rem; }
+        table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+        th, td { padding: 0.6rem; text-align: left; border-bottom: 1px solid #eee; }
+        th { color: #666; font-size: 0.85rem; text-transform: uppercase; }
+        .loading { color: #999; font-style: italic; }
+        .admin-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .admin-panel h3 {
+            color: #4f46e5;
+            margin-bottom: 1rem;
+        }
+        .delete-user-box {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+        .delete-user-box input {
+            flex: 1;
+            padding: 0.7rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+        .delete-user-box input:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
+        .delete-user-box button {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 0.7rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .delete-user-box button:hover {
+            background: #dc2626;
+        }
+        #delete-message {
+            margin-top: 0.75rem;
+            color: #555;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h1>Mi App</h1>
+        <div>
+            <span id="user-info"></span>
+            <button onclick="logout()">Cerrar Sesión</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <p class="welcome">Bienvenido, <span id="username-display"></span>!</p>
+
+        <div class="card">
+            <h2>Usuarios registrados</h2>
+            <table>
+                <thead><tr>
+                    <th>ID</th><th>Usuario</th><th>Email</th><th>Nombre</th>
+                </tr></thead>
+                <tbody id="users-table">
+                    <tr><td colspan="4" class="loading">Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div id="admin-controls" class="admin-panel" style="display:none;">
+        <h3>Panel Admin</h3>
+
+        <div class="delete-user-box">
+            <input
+                type="text"
+                id="delete-user-id"
+                placeholder="ID del usuario"
+            >
+                <button onclick="deleteUser()">
+                Eliminar usuario
+                </button>
+        </div>
+
+            <p id="delete-message"></p>
+        </div>
+
+        <div class="card">
+            <h2>Items</h2>
+            <div id="items-list" class="loading">Cargando...</div>
+        </div>
+    </div>
+
+    <!-- FUNCIONES DE JS -->
+    <script>
+        const token = localStorage.getItem('token');
+
+        // Si no hay token, redirigir al login
+        if (!token) {
+            window.location.href = '/';
+        }
+
+        const headers = { 'Authorization': `Bearer ${token}` };
+
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            document.getElementById('username-display').textContent = payload.sub;
+            document.getElementById('user-info').textContent = payload.sub + ' | ';
+        } catch(e) {}
+
+        // Cargar usuarios desde la API
+        async function loadUsers() {
+            try {
+                const res = await fetch('/users/', { headers });
+                if (res.status === 401) { logout(); return; }
+                const users = await res.json();
+                const tbody = document.getElementById('users-table');
+                tbody.innerHTML = users.map(u => `
+                    <tr>
+                        <td>${u.id}</td>
+                        <td>${u.username}</td>
+                        <td>${u.email}</td>
+                        <td>${u.full_name || '-'}</td>
+                    </tr>
+                `).join('');
+            } catch(e) {
+                console.error('Error cargando usuarios:', e);
+            }
+        }
+
+        // Cargar items desde la API
+        async function loadItems() {
+            try {
+                const res = await fetch('/items/', { headers });
+                const items = await res.json();
+                document.getElementById('items-list').innerHTML =
+                    items.map(i => `<p>${i.id}. ${i.title}</p>`).join('');
+            } catch(e) {
+                console.error('Error cargando items:', e);
+            }
+        }
+
+        async function deleteUser() {
+            const userId = document.getElementById('delete-user-id').value;
+            const message = document.getElementById('delete-message');
+            if (!userId) {message.textContent = 'Ingrese un usuario';return;}
+            try {
+                const res = await fetch(
+                    `/users/${userId}`,
+                    {
+                        method: 'DELETE',
+                        headers
+                    }
+                );
+                console.log(res.status);
+                if (res.ok) {
+                
+                    message.textContent =
+                        'Usuario eliminado correctamente';
+                    loadUsers();
+                } else if(res.status === 404){
+                    message.textContent ='No existe ese usuario';
+                }
+                else{
+                    message.textContent = 'No se pudo eliminar el usuario';
+                } 
+            } catch(e) {
+                message.textContent =
+                    'Error eliminando usuario';
+            }
+        }
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/';
+        }
+
+            const payload = JSON.parse(atob(token.split('.')[1]));
+
+        // Lógica condicional: mostrar botón de eliminar solo para admins
+        if (payload.role === 'admin') {
+            // Mostrar controles de admin
+            document.getElementById('admin-controls').style.display = 'block';
+        }
+
+        // Cargar datos al entrar a la página
+        loadUsers();
+        loadItems();
+    </script>
+</body>
+</html>
