@@ -1,0 +1,10 @@
+services:               # lista de servicios (contenedores) a correr
+  app:                   # nombre del servicio (podés elegir el que quieras)
+    build: .             # construir la imagen usando el Dockerfile del directorio actual
+    ports:
+      - "8000:8000"    # mapear puerto 8000 de tu máquina al 8000 del contenedor
+    volumes:
+      - ./database.db:/app/database.db  # persistir la DB fuera del contenedor
+    environment:         # variables de entorno dentro del contenedor
+      - SECRET_KEY=09d25e094faa6ca2557c818196b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7
+
