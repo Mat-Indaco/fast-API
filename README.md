@@ -1,29 +1,3 @@
-## Database Diagram
-
-```mermaid
-erDiagram
-
-    USER {
-        int id PK
-        string username
-        string email
-        string full_name
-        string hashed_password
-        string role
-    }
-
-    ITEM {
-        int id PK
-        string title
-        string description
-        int cant
-        int owner_id FK
-    }
-
-    USER ||--o{ ITEM : owns
-```
-
-
 # FastAPI Technical Challenge
 
 REST API desarrollada con FastAPI que implementa autenticación JWT, roles de usuario, CRUD de usuarios e items, frontend básico con HTML/CSS/JS y soporte para Docker.
