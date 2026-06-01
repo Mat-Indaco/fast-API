@@ -1,10 +1,8 @@
 from datetime import datetime, timedelta, timezone
-from typing import Annotated
 
 from sqlmodel import select, Session
 from db import get_session
 from models import User, UserRole
-from schemas import TokenData, Token
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from pwdlib import PasswordHash

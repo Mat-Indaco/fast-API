@@ -1,6 +1,4 @@
 from fastapi import FastAPI, Request
-from contextlib import asynccontextmanager
-from db import create_db_and_tables
 
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
