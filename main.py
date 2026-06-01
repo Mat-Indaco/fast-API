@@ -51,13 +51,11 @@ def home_page(request: Request):
     """Página principal (home/dashboard)."""
     return templates.TemplateResponse(request=request, name="home.html")
 
+
 @app.get("/register")
 def register_page(request: Request):
     """Página de registro."""
-    return templates.TemplateResponse(
-        request=request,
-        name="register.html"
-    )
+    return templates.TemplateResponse(request=request, name="register.html")
 
 
 # @app.get("/")

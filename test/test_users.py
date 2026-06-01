@@ -1,4 +1,3 @@
-
 def test_create_user(client):
 
     response = client.post(
@@ -41,6 +40,8 @@ def test_get_users(client):
     response = client.get("/users/", headers={"Authorization": f"Bearer {token}"})
 
     assert response.status_code == 200
+
+
 def test_create_user_username_duplicado(client):
 
     client.post(
@@ -64,6 +65,7 @@ def test_create_user_username_duplicado(client):
     )
 
     assert response.status_code == 409
+
 
 def test_create_user_email_duplicado(client):
 
@@ -89,6 +91,7 @@ def test_create_user_email_duplicado(client):
 
     assert response.status_code == 409
 
+
 def test_admin_no_puede_borrarse(client):
 
     client.post(
@@ -104,17 +107,11 @@ def test_admin_no_puede_borrarse(client):
 
     login = client.post(
         "/login",
-        data={
-            "username": "admin_delete",
-            "password": "1234"
-        },
+        data={"username": "admin_delete", "password": "1234"},
     )
 
     token = login.json()["access_token"]
 
-    response = client.delete(
-        "/users/1",
-        headers={"Authorization": f"Bearer {token}"}
-    )
+    response = client.delete("/users/1", headers={"Authorization": f"Bearer {token}"})
 
     assert response.status_code == 400

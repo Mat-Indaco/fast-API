@@ -35,9 +35,7 @@ def client_fixture(session: Session):
     def override_get_session():
         return session
 
-    app.dependency_overrides[get_session] = (
-        override_get_session
-    )
+    app.dependency_overrides[get_session] = override_get_session
 
     client = TestClient(app)
 

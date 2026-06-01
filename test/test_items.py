@@ -1,5 +1,3 @@
-
-
 def test_create_item(client):
 
     client.post(
@@ -14,10 +12,7 @@ def test_create_item(client):
 
     login = client.post(
         "/login",
-        data={
-            "username": "itemuser",
-            "password": "1234"
-        },
+        data={"username": "itemuser", "password": "1234"},
     )
 
     token = login.json()["access_token"]
@@ -25,11 +20,7 @@ def test_create_item(client):
     response = client.post(
         "/items/",
         headers={"Authorization": f"Bearer {token}"},
-        json={
-            "title": "Notebook",
-            "description": "Gaming",
-            "cant": 1
-        }
+        json={"title": "Notebook", "description": "Gaming", "cant": 1},
     )
 
     assert response.status_code == 200
@@ -37,6 +28,7 @@ def test_create_item(client):
     data = response.json()
 
     assert data["title"] == "Notebook"
+
 
 def test_item_repetido_suma_cantidad(client):
 
@@ -52,10 +44,7 @@ def test_item_repetido_suma_cantidad(client):
 
     login = client.post(
         "/login",
-        data={
-            "username": "sumuser",
-            "password": "1234"
-        },
+        data={"username": "sumuser", "password": "1234"},
     )
 
     token = login.json()["access_token"]
@@ -63,21 +52,13 @@ def test_item_repetido_suma_cantidad(client):
     client.post(
         "/items/",
         headers={"Authorization": f"Bearer {token}"},
-        json={
-            "title": "Mouse",
-            "description": "Gamer",
-            "cant": 2
-        }
+        json={"title": "Mouse", "description": "Gamer", "cant": 2},
     )
 
     response = client.post(
         "/items/",
         headers={"Authorization": f"Bearer {token}"},
-        json={
-            "title": "Mouse",
-            "description": "Gamer",
-            "cant": 3
-        }
+        json={"title": "Mouse", "description": "Gamer", "cant": 3},
     )
 
     data = response.json()
