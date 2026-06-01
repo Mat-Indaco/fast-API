@@ -1,23 +1,18 @@
-from fastapi.testclient import TestClient
-
-from main import app
 
 
-client = TestClient(app)
 
-
-def test_login():
+def test_login(client):
 
     client.post(
         "/users/",
         json={
-            "username": "admin",
-            "email": "admin@test.com",
+            "username": "DonTester",
+            "email": "Testeremail@test.com",
             "full_name": "Admin",
             "password": "1234",
         },
     )
-    response = client.post("/login", data={"username": "admin", "password": "1234"})
+    response = client.post("/login", data={"username": "DonTester", "password": "1234"})
     assert response.status_code == 200
 
     data = response.json()
@@ -26,7 +21,7 @@ def test_login():
     assert data["token_type"] == "bearer"
 
 
-def test_login_usuario_inexistente():
+def test_login_usuario_inexistente(client):
     """Login con usuario que no existe devuelve 401."""
     response = client.post(
         "/login",
@@ -36,13 +31,13 @@ def test_login_usuario_inexistente():
     assert response.status_code == 401
 
 
-def test_endpoint_protegido_sin_token():
+def test_endpoint_protegido_sin_token(client):
     """Acceder a un endpoint protegido sin token devuelve 401."""
     response = client.get("/users/")
     assert response.status_code == 401
 
 
-def test_endpoint_protegido_con_token_invalido():
+def test_endpoint_protegido_con_token_invalido(client):
     """Acceder con un token inventado devuelve 401."""
     response = client.get(
         "/users/",

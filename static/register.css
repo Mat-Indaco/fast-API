@@ -1,0 +1,19 @@
+.register-link {
+    margin-top: 1rem;
+    text-align: center;
+}
+
+.register-link p {
+    color: #666;
+    margin-bottom: 0.4rem;
+}
+
+.register-link a {
+    color: #4f46e5;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.register-link a:hover {
+    text-decoration: underline;
+}
