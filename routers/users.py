@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from typing import Annotated
 from db import SessionDep
+from sqlalchemy import func
 from schemas import UserCreate, UserRead, UserUpdate
 from services import create_user, read_user
 from sqlmodel import select
-from models import User
+from models import User,Item
 from security import get_current_user, require_admin
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -20,7 +21,7 @@ def create_new_user(user: UserCreate, session: SessionDep):
 
     Devuelve la información pública del usuario creado.
     """
-    # Verificar username duplicado
+
     existing_username = session.exec(
         select(User).where(User.username == user.username)
     ).first()
@@ -28,7 +29,6 @@ def create_new_user(user: UserCreate, session: SessionDep):
     if existing_username:
         raise HTTPException(status_code=409, detail="Username already exists")
 
-    # Verificar email duplicado
     existing_email = session.exec(select(User).where(User.email == user.email)).first()
 
     if existing_email:
@@ -96,6 +96,25 @@ def delete_user(
     session.commit()
     return {"ok": True}
 
+@router.get("/{user_id}/items/count")
+def count_user_items(
+    user_id: int,
+    session: SessionDep,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Devuelve la cantidad de items que tiene un usuario.
+
+    Requiere autenticación JWT.
+    """
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    count = session.exec(select(func.count()).where(Item.owner_id == user_id)).one()
+
+    return {"user_id": user_id, "username": user.username, "item_count": count}
+
 
 @router.patch("/{user_id}", response_model=UserRead)
 def update_user(user_id: int, user_update: UserUpdate, session: SessionDep):
@@ -113,3 +132,5 @@ def update_user(user_id: int, user_update: UserUpdate, session: SessionDep):
     session.commit()
     session.refresh(db_user)
     return db_user
+
+

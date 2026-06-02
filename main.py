@@ -12,22 +12,13 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 REST API desarrollada con FastAPI.
 
 Features:
-- JWT Authentication
+- JWT 
 - Roles de usuario
 - CRUD de usuarios
 - CRUD de items
-- Docker support
-- SQLite database
+- Docker 
+- SQLite 
 """
-
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#    create_db_and_tables()
-#    yield
-
-
-# app = FastAPI(lifespan=lifespan)
-
 
 app.include_router(users_router)
 app.include_router(items_router)
@@ -43,7 +34,7 @@ def login_page(request: Request):
     return templates.TemplateResponse(request=request, name="login.html")
 
 
-# Agregar esta ruta nueva:
+
 @app.get("/home")
 def home_page(request: Request):
     """Página principal (home/dashboard)."""
@@ -56,6 +47,3 @@ def register_page(request: Request):
     return templates.TemplateResponse(request=request, name="register.html")
 
 
-# @app.get("/")
-# def read_root():
-#    return {"message": "API funcionando"}

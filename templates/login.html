@@ -74,7 +74,7 @@
 </div>
     </div>
 
-    <!-- FUNCION DE JS: manejo del login con fetch (AJAX) -->
+
     <script>
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -98,9 +98,9 @@
                 }
 
                 const data = await response.json();
-                // Guardar el token en localStorage
+               
                 localStorage.setItem('token', data.access_token);
-                // Redirigir al home
+
                 window.location.href = '/home';
             } catch (err) {
                 errorEl.textContent = 'Error de conexión';

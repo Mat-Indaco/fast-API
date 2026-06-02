@@ -116,11 +116,10 @@
         </div>
     </div>
 
-    <!-- FUNCIONES DE JS -->
     <script>
         const token = localStorage.getItem('token');
 
-        // Si no hay token, redirigir al login
+      
         if (!token) {
             window.location.href = '/';
         }
@@ -133,7 +132,7 @@
             document.getElementById('user-info').textContent = payload.sub + ' | ';
         } catch(e) {}
 
-        // Cargar usuarios desde la API
+   
         async function loadUsers() {
             try {
                 const res = await fetch('/users/', { headers });
@@ -153,7 +152,7 @@
             }
         }
 
-        // Cargar items desde la API
+       
         async function loadItems() {
             try {
                 const res = await fetch('/items/', { headers });
@@ -316,13 +315,12 @@
 
             const payload = JSON.parse(atob(token.split('.')[1]));
 
-        // Lógica condicional: mostrar botón de eliminar solo para admins
+        
         if (payload.role === 'admin') {
-            // Mostrar controles de admin
+       
             document.getElementById('admin-controls').style.display = 'block';
         }
 
-        // Cargar datos al entrar a la página
         loadUsers();
         loadItems();
     </script>

@@ -4,7 +4,7 @@ from enum import StrEnum
 
 
 class Item(SQLModel, table=True):
-    """Modelo de item en la base de datos."""
+    """Modelo de item en la db."""
 
     id: int | None = Field(default=None, primary_key=True)
     title: str = Field(index=True)
