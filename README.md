@@ -256,15 +256,15 @@ erDiagram
 
 Arranqué definiendo los modelos de datos: dos entidades, `User` e `Item`, con una relación de uno a muchos. Cada usuario puede tener muchos items, y cada item pertenece a un único usuario.
 
-Para la autenticación implementé JWT con `python-jose`: al hacer login se genera un token firmado con una clave secreta, y ese token se valida en cada request protegido mediante una dependencia de FastAPI. Agregué un sistema de roles (USER / ADMIN) para demostrar lógica de negocio: solo el admin puede eliminar usuarios, y cada usuario solo puede ver y eliminar sus propios items.
+Para la autenticación implementé JWT: al hacer login se genera un token firmado con una clave secreta, y ese token se valida en cada request protegido mediante una dependencia de FastAPI. Agregué un sistema de roles (USER / ADMIN) para la lógica de negocio: solo el admin puede eliminar usuarios, y cada usuario solo puede ver y eliminar sus propios items.
 
-La base de datos es SQLite gestionada con SQLModel (que combina SQLAlchemy y Pydantic) y Alembic para migraciones. Elegí SQLite para mantener el proyecto simple y sin dependencias externas, lo que facilita levantarlo localmente o con Docker.
+La DB es SQLite gestionada con SQLModel  y Alembic para migraciones. Elegí SQLite porque esta integrada con python y SQLModel porque es del mismos creador que fastapi,como es en un solo archiva facilita levantarlo localmente o con Docker.
 
-El frontend es minimalista — tres páginas HTML con CSS y algo de JavaScript para manejar el login, el registro y el dashboard. No es el foco del challenge pero está funcional.
+El frontend es minimalista — tres páginas HTML con CSS y algo de JS para manejar el login, el registro y el dashboard.
 
 Para Docker armé un `Dockerfile` con `uv` como gestor de dependencias y un `entrypoint.sh` que corre las migraciones y el seed automáticamente antes de levantar el servidor, para que el proyecto funcione con un solo `docker compose up`.
 
-Los tests cubren los flujos principales de usuarios e items usando `httpx` con un cliente de test de FastAPI y una base de datos SQLite en memoria para no tocar la de desarrollo.
+Los tests cubren los flujos principales de usuarios e items con un cliente de test de FastAPI y una base de datos SQLite en memoria para no tocar la de desarrollo.
 
 ## Autor
 
