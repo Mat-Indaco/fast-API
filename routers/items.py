@@ -9,12 +9,11 @@ from security import get_current_user
 router = APIRouter(prefix="/items", tags=["items"])
 
 
-
 @router.post("/", response_model=ItemRead)
 def create_item(
-    item: ItemCreate,  
-    session: SessionDep, 
-    current_user: User = Depends(get_current_user),  
+    item: ItemCreate,
+    session: SessionDep,
+    current_user: User = Depends(get_current_user),
 ):
     """
     Crea un nuevo item asociado al usuario autenticado.
@@ -27,7 +26,6 @@ def create_item(
         select(Item).where(Item.title == item.title, Item.owner_id == current_user.id)
     ).first()
 
-  
     if existing_item:
         existing_item.cant += item.cant
 
@@ -43,21 +41,20 @@ def create_item(
         title=item.title,
         description=item.description,
         cant=item.cant,
-        owner_id=current_user.id,  
+        owner_id=current_user.id,
     )
-    session.add(db_item)  
-    session.commit()  
-    session.refresh(db_item)  
+    session.add(db_item)
+    session.commit()
+    session.refresh(db_item)
     return db_item
-
 
 
 @router.get("/", response_model=list[ItemRead])
 def list_items(
     session: SessionDep,
     current_user: User = Depends(get_current_user),
-    offset: int = 0,  
-    limit: int = Query(default=100, le=100),  
+    offset: int = 0,
+    limit: int = Query(default=100, le=100),
 ):
     """
     Devuelve los items pertenecientes al usuario autenticado.
@@ -83,10 +80,8 @@ def delete_item(
 
     item = session.get(Item, item_id)
 
-
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
-
 
     if item.owner_id != current_user.id:
         raise HTTPException(

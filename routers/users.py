@@ -5,7 +5,7 @@ from sqlalchemy import func
 from schemas import UserCreate, UserRead, UserUpdate
 from services import create_user, read_user
 from sqlmodel import select
-from models import User,Item
+from models import User, Item
 from security import get_current_user, require_admin
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -96,6 +96,7 @@ def delete_user(
     session.commit()
     return {"ok": True}
 
+
 @router.get("/{user_id}/items/count")
 def count_user_items(
     user_id: int,
@@ -132,5 +133,3 @@ def update_user(user_id: int, user_update: UserUpdate, session: SessionDep):
     session.commit()
     session.refresh(db_user)
     return db_user
-
-

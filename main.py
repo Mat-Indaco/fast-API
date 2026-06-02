@@ -34,7 +34,6 @@ def login_page(request: Request):
     return templates.TemplateResponse(request=request, name="login.html")
 
 
-
 @app.get("/home")
 def home_page(request: Request):
     """Página principal (home/dashboard)."""
@@ -45,5 +44,3 @@ def home_page(request: Request):
 def register_page(request: Request):
     """Página de registro."""
     return templates.TemplateResponse(request=request, name="register.html")
-
-
