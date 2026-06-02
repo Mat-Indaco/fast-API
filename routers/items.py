@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import select
-
+from sqlalchemy import func
 from db import SessionDep
 from models import Item, User
 from schemas import ItemCreate, ItemRead
@@ -78,6 +78,27 @@ def list_items(
     ).all()
     return items
 
+
+@router.get("/{user_id}/items/count")
+def count_user_items(
+    user_id: int,
+    session: SessionDep,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Devuelve la cantidad de items que tiene un usuario.
+
+    Requiere autenticación JWT.
+    """
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    count = session.exec(
+        select(func.count()).where(Item.owner_id == user_id)
+    ).one()
+
+    return {"user_id": user_id, "username": user.username, "item_count": count}
 
 @router.delete("/{item_id}")
 def delete_item(
