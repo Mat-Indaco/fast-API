@@ -1,10 +1,12 @@
 """Script para poblar la DB con usuarios de prueba."""
+
 from sqlmodel import Session, create_engine, select
 from models import User, UserRole
 from security import hash_password
 
 DATABASE_URL = "sqlite:///database.db"
 engine = create_engine(DATABASE_URL)
+
 
 def seed():
     users = [
@@ -40,6 +42,7 @@ def seed():
                 session.add(u)
         session.commit()
         print("✅ Seed completado.")
+
 
 if __name__ == "__main__":
     seed()

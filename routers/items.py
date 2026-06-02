@@ -94,11 +94,10 @@ def count_user_items(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    count = session.exec(
-        select(func.count()).where(Item.owner_id == user_id)
-    ).one()
+    count = session.exec(select(func.count()).where(Item.owner_id == user_id)).one()
 
     return {"user_id": user_id, "username": user.username, "item_count": count}
+
 
 @router.delete("/{item_id}")
 def delete_item(
