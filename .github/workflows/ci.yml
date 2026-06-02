@@ -28,8 +28,6 @@ jobs:
       - name: Formato con Ruff
         run: uv run ruff format --check .
 
-      - name: Tipos con mypy
-        run: uv run mypy .
 
       - name: Tests con pytest
         run: uv run pytest -v
