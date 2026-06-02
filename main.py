@@ -8,17 +8,6 @@ from routers.auth import router as auth_router
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
-"""
-REST API desarrollada con FastAPI.
-
-Features:
-- JWT 
-- Roles de usuario
-- CRUD de usuarios
-- CRUD de items
-- Docker 
-- SQLite 
-"""
 
 app.include_router(users_router)
 app.include_router(items_router)

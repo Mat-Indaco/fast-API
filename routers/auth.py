@@ -15,16 +15,7 @@ def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     session: Session = Depends(get_session),
 ):
-    """
-    Autentica un usuario usando username y password.
-
-    Si las credenciales son válidas,
-    devuelve un JWT Bearer Token.
-
-    El token incluye:
-    - username
-    - role
-    """
+    """Login con username y password. Devuelve un JWT Bearer Token."""
 
     user = authenticate_user(form_data.username, form_data.password, session)
 

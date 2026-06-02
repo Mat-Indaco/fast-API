@@ -15,12 +15,7 @@ def create_item(
     session: SessionDep,
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Crea un nuevo item asociado al usuario autenticado.
-
-    El owner del item se asigna automáticamente
-    a partir del token JWT.
-    """
+    """Crea un item. Si ya existe uno con el mismo título, suma la cantidad."""
 
     existing_item = session.exec(
         select(Item).where(Item.title == item.title, Item.owner_id == current_user.id)
@@ -56,13 +51,6 @@ def list_items(
     offset: int = 0,
     limit: int = Query(default=100, le=100),
 ):
-    """
-    Devuelve los items pertenecientes al usuario autenticado.
-
-    Incluye soporte de paginación mediante:
-    - offset
-    - limit
-    """
 
     items = session.exec(
         select(Item).where(Item.owner_id == current_user.id).offset(offset).limit(limit)
