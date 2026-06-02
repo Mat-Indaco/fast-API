@@ -1,4 +1,4 @@
 venv/
 __pycache__/
 *.pyc
-.env
+# .env  ← lo incluyo para facilitar el uso de Docker

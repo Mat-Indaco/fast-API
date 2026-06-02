@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import os
 
 from sqlmodel import select, Session
 from db import get_session
@@ -8,9 +9,9 @@ from fastapi.security import OAuth2PasswordBearer
 from pwdlib import PasswordHash
 from jose import jwt, JWTError
 
-SECRET_KEY = "09d25e094faa6ca2557c818196b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+SECRET_KEY = os.getenv("SECRET_KEY", "changeme-insecure-default")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 password_hash = PasswordHash.recommended()
 
 
