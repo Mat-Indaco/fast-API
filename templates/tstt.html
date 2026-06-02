@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Home</title>
+    <link rel="stylesheet" href="/static/home.css">
+</head>
+<body>
+    <nav class="navbar">
+        <h1>Mi App</h1>
+        <div>
+            <span id="user-info"></span>
+            <button onclick="logout()">Cerrar Sesión</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <p class="welcome">Bienvenido, <span id="username-display"></span>!</p>
+
+        <div class="card">
+            <h2>Usuarios registrados</h2>
+            <table>
+                <thead><tr>
+                    <th>ID</th><th>Usuario</th><th>Email</th><th>Nombre</th>
+                </tr></thead>
+                <tbody id="users-table">
+                    <tr><td colspan="4" class="loading">Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div id="admin-controls" class="admin-panel" style="display:none;">
+        <h3>Panel Admin</h3>
+
+        <div class="delete-user-box">
+            <input
+                type="text"
+                id="delete-user-id"
+                placeholder="ID del usuario"
+            >
+                <button onclick="deleteUser()">
+                Eliminar usuario
+                </button>
+        </div>
+
+            <p id="delete-message"></p>
+        </div>
+
+        <div class="admin-panel" >
+        <h3>Panel Items</h3>
+        <div class="delete-user-box">
+            <input
+                type="text"
+                id="delete-item-id"
+                placeholder="ID del item"
+            >
+                <button onclick="deleteItem()">
+                Eliminar Item
+                </button>
+        </div>
+
+            <p id="delete-item-message"></p>
+           <div class="create-item-panel">
+
+    <h3>Crear Item</h3>
+
+    <div class="form-group">
+        <label>Título</label>
+
+        <input
+            type="text"
+            id="item-title"
+            placeholder="Ej: Notebook"
+        >
+    </div>
+
+    <div class="form-group">
+        <label>Cantidad</label>
+
+        <input
+            type="number"
+            id="item-cant"
+            placeholder="Ej: 5"
+        >
+    </div>
+
+    <div class="form-group">
+        <label>Descripción</label>
+
+        <input
+            type="text"
+            id="item-description"
+            placeholder="Descripción opcional"
+        >
+    </div>
+
+    <button class="primary-btn" onclick="createItem()">
+        Crear Item
+    </button>
+
+    <p id="create-item-message"></p>
+
+</div>
+
+    
+
+        <div class="card">
+            <h2>Items</h2>
+            <table>
+                <thead><tr>
+                    <th>ID</th><th>Nombre</th><th>Cantidad</th>
+                </tr></thead>
+                <tbody id="items-list">
+                    <tr><td colspan="3" class="loading">Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+
+      
+        if (!token) {
+            window.location.href = '/';
+        }
+
+        const headers = { 'Authorization': `Bearer ${token}` };
+
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            document.getElementById('username-display').textContent = payload.sub;
+            document.getElementById('user-info').textContent = payload.sub + ' | ';
+        } catch(e) {}
+
+   
+        async function loadUsers() {
+            try {
+                const res = await fetch('/users/', { headers });
+                if (res.status === 401) { logout(); return; }
+                const users = await res.json();
+                const tbody = document.getElementById('users-table');
+                tbody.innerHTML = users.map(u => `
+                    <tr>
+                        <td>${u.id}</td>
+                        <td>${u.username}</td>
+                        <td>${u.email}</td>
+                        <td>${u.full_name || '-'}</td>
+                    </tr>
+                `).join('');
+            } catch(e) {
+                console.error('Error cargando usuarios:', e);
+            }
+        }
+
+       
+        async function loadItems() {
+            try {
+                const res = await fetch('/items/', { headers });
+                const items = await res.json();
+                document.getElementById('items-list').innerHTML =
+                    items.map(i => `<tr>
+                        <td>${i.id}</td>
+                        <td>${i.title}</td>
+                        <td>${i.cant}</td>
+                    </tr>`).join('');
+            } catch(e) {
+                console.error('Error cargando items:', e);
+            }
+        }
+
+        async function deleteUser() {
+            const userId = document.getElementById('delete-user-id').value;
+            const message = document.getElementById('delete-message');
+            if (!userId) {message.textContent = 'Ingrese un usuario';return;}
+            try {
+                const res = await fetch(
+                    `/users/${userId}`,
+                    {
+                        method: 'DELETE',
+                        headers
+                    }
+                );
+                console.log(res.status);
+                if (res.ok) {
+                
+                    message.textContent =
+                        'Usuario eliminado correctamente';
+                    loadUsers();
+                } else if(res.status === 404){
+                    message.textContent ='No existe ese usuario';
+                }
+                else if (res.status === 400)
+                 {
+                       message.textContent =
+                        'No puedes eliminarte a ti mismo';
+                }
+                else{
+                    message.textContent = 'No se pudo eliminar el usuario';
+                } 
+            } catch(e) {
+                message.textContent =
+                    'Error eliminando usuario';
+            }
+        }
+
+        async function createItem() {
+
+            const title = document.getElementById(
+                'item-title'
+            ).value;
+
+            const description = document.getElementById(
+                'item-description'
+            ).value;
+
+            const message = document.getElementById(
+                'create-item-message'
+            );
+            const cant = document.getElementById(
+                'item-cant'
+            ).value;
+
+            if (!title) {
+            
+                message.textContent =
+                    'Ingrese un título';
+            
+                return;
+            }
+        
+            try {
+            
+                const res = await fetch(
+                    '/items/',
+                    {
+                        method: 'POST',
+                    
+                        headers: {
+                            ...headers,
+                            'Content-Type': 'application/json'
+                        },
+                    
+                        body: JSON.stringify({
+                            title,
+                            description,
+                            cant                        })
+                    }
+                    
+                );
+                
+                if (res.ok) {
+                
+                    message.textContent =
+                        'Item creado correctamente';
+                
+                    document.getElementById(
+                        'item-title'
+                    ).value = '';
+                
+                    document.getElementById(
+                        'item-description'
+                    ).value = '';
+                
+                    loadItems();
+                
+                } else {
+                
+                    message.textContent =
+                        'No se pudo crear el item';
+                }
+            
+            } catch(e) {
+            
+                console.error(e);
+            
+                message.textContent =
+                    'Error creando item';
+            }
+        }
+        
+        async function deleteItem() {
+            const itemId = document.getElementById('delete-item-id').value;
+            const message = document.getElementById('delete-item-message');
+            if (!itemId) {message.textContent = 'Ingrese un item';return;}
+            try {
+                const res = await fetch(
+                    `/items/${itemId}`,
+                    {
+                        method: 'DELETE',
+                        headers
+                    }
+                );
+                console.log(res.status);
+                if (res.ok) {
+                
+                    message.textContent =
+                        'Item eliminado correctamente';
+                    loadItems();
+                } else if(res.status === 404){
+                    message.textContent ='No existe un Item con esa ID';
+                }
+                else{
+                    message.textContent = 'No se pudo eliminar el Item';
+                } 
+            } catch(e) {
+                message.textContent =
+                    'Error eliminando Item';
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/';
+        }
+
+            const payload = JSON.parse(atob(token.split('.')[1]));
+
+        
+        if (payload.role === 'admin') {
+       
+            document.getElementById('admin-controls').style.display = 'block';
+        }
+
+        loadUsers();
+        loadItems();
+    </script>
+</body>
+</html>

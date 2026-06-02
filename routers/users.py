@@ -38,6 +38,12 @@ def create_new_user(user: UserCreate, session: SessionDep):
     return db_user
 
 
+@router.get("/me", response_model=UserRead)
+def get_me(current_user: User = Depends(get_current_user)):
+    """Devuelve el usuario actualmente autenticado."""
+    return current_user
+
+
 @router.get("/{user_id}", response_model=UserRead)
 def get_user(
     user_id: int, session: SessionDep, current_user: User = Depends(get_current_user)
@@ -112,9 +118,11 @@ def count_user_items(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    count = session.exec(select(func.count()).where(Item.owner_id == user_id)).one()
+    count = session.exec(
+        select(func.sum(Item.cant)).where(Item.owner_id == user_id)
+    ).one()
 
-    return {"user_id": user_id, "username": user.username, "item_count": count}
+    return {"user_id": user_id, "username": user.username, "item_count": count or 0}
 
 
 @router.patch("/{user_id}", response_model=UserRead)
