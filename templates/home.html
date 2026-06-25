@@ -2,121 +2,157 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Home</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
     <link rel="stylesheet" href="/static/home.css">
- 
 </head>
 <body>
-    <nav class="navbar">
-        <h1>Mi App</h1>
-        <div>
-            <span id="user-info"></span>
-            <button onclick="logout()">Cerrar Sesión</button>
+
+<nav class="navbar">
+    <div class="nav-brand">
+        <span class="nav-icon">✦</span>
+        <span>Task Manager</span>
+    </div>
+    <div class="nav-right">
+        <span class="nav-user" id="nav-username"></span>
+        <button class="btn-logout" onclick="logout()">Salir</button>
+    </div>
+</nav>
+
+<div class="container">
+
+    <!-- Stats -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <span class="stat-number" id="stat-total">—</span>
+            <span class="stat-label">Total</span>
         </div>
-    </nav>
-
-    <div class="container">
-        <p class="welcome">Bienvenido, <span id="username-display"></span>!</p>
-
-        <div class="card">
-            <h2>Usuarios registrados</h2>
-            <table>
-                <thead><tr>
-                    <th>ID</th><th>Usuario</th><th>Email</th><th>Nombre</th>
-                </tr></thead>
-                <tbody id="users-table">
-                    <tr><td colspan="4" class="loading">Cargando...</td></tr>
-                </tbody>
-            </table>
+        <div class="stat-card pending">
+            <span class="stat-number" id="stat-pending">—</span>
+            <span class="stat-label">Pendientes</span>
         </div>
-        <div id="admin-controls" class="admin-panel" style="display:none;">
-        <h3>Panel Admin</h3>
-
-        <div class="delete-user-box">
-            <input
-                type="text"
-                id="delete-user-id"
-                placeholder="ID del usuario"
-            >
-                <button onclick="deleteUser()">
-                Eliminar usuario
-                </button>
+        <div class="stat-card in-progress">
+            <span class="stat-number" id="stat-inprogress">—</span>
+            <span class="stat-label">En progreso</span>
         </div>
-
-            <p id="delete-message"></p>
+        <div class="stat-card done">
+            <span class="stat-number" id="stat-done">—</span>
+            <span class="stat-label">Completadas</span>
         </div>
-
-        <div class="admin-panel" >
-        <h3>Panel Items</h3>
-        <div class="delete-user-box">
-            <input
-                type="text"
-                id="delete-item-id"
-                placeholder="ID del item"
-            >
-                <button onclick="deleteItem()">
-                Eliminar Item
-                </button>
+        <div class="stat-card overdue">
+            <span class="stat-number" id="stat-overdue">—</span>
+            <span class="stat-label">Vencidas</span>
         </div>
-
-            <p id="delete-item-message"></p>
-           <div class="create-item-panel">
-
-    <h3>Crear Item</h3>
-
-    <div class="form-group">
-        <label>Título</label>
-
-        <input
-            type="text"
-            id="item-title"
-            placeholder="Ej: Notebook"
-        >
     </div>
 
-    <div class="form-group">
-        <label>Cantidad</label>
+    <div class="main-layout">
 
-        <input
-            type="number"
-            id="item-cant"
-            placeholder="Ej: 5"
-        >
+        <!-- Panel izquierdo: tareas -->
+        <div class="tasks-panel">
+
+            <!-- Filtros -->
+            <div class="filters-bar">
+                <div class="status-tabs">
+                    <button class="tab active" data-status="">Todas</button>
+                    <button class="tab" data-status="pending">Pendientes</button>
+                    <button class="tab" data-status="in_progress">En progreso</button>
+                    <button class="tab" data-status="done">Completadas</button>
+                </div>
+                <div class="filter-controls">
+                    <input type="text" id="search-input" placeholder="Buscar..." oninput="onSearchInput()">
+                    <select id="priority-filter" onchange="loadTasks()">
+                        <option value="">Prioridad</option>
+                        <option value="high">Alta</option>
+                        <option value="medium">Media</option>
+                        <option value="low">Baja</option>
+                    </select>
+                    <select id="category-filter" onchange="loadTasks()">
+                        <option value="">Categoría</option>
+                    </select>
+                    <select id="sort-select" onchange="loadTasks()">
+                        <option value="created_at">Fecha creación</option>
+                        <option value="due_date">Vencimiento</option>
+                        <option value="priority">Prioridad</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Lista de tareas -->
+            <div id="tasks-list">
+                <div class="loading-msg">Cargando tareas...</div>
+            </div>
+
+        </div>
+
+        <!-- Panel derecho: formularios -->
+        <div class="side-panel">
+
+            <!-- Crear tarea -->
+            <div class="card">
+                <h3 class="card-title">Nueva tarea</h3>
+                <div class="form-group">
+                    <label>Título *</label>
+                    <input type="text" id="task-title" placeholder="¿Qué hay que hacer?">
+                </div>
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <textarea id="task-desc" placeholder="Detalles opcionales..." rows="2"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Prioridad</label>
+                        <select id="task-priority">
+                            <option value="medium">Media</option>
+                            <option value="high">Alta</option>
+                            <option value="low">Baja</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Vencimiento</label>
+                        <input type="date" id="task-due">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Categoría</label>
+                    <select id="task-category">
+                        <option value="">Sin categoría</option>
+                    </select>
+                </div>
+                <button class="btn-primary" onclick="createTask()">Agregar tarea</button>
+                <p class="form-msg" id="task-msg"></p>
+            </div>
+
+            <!-- Categorías -->
+            <div class="card">
+                <h3 class="card-title">Categorías</h3>
+                <div id="categories-list" class="category-chips"></div>
+                <div class="form-row" style="margin-top: 0.75rem;">
+                    <input type="text" id="cat-name" placeholder="Nueva categoría">
+                    <input type="color" id="cat-color" value="#6366f1" style="width:38px; padding:2px; border-radius:6px; border:1px solid #ddd; cursor:pointer;">
+                    <button class="btn-sm" onclick="createCategory()">+</button>
+                </div>
+                <p class="form-msg" id="cat-msg"></p>
+            </div>
+
+            <!-- Admin -->
+            <div class="card" id="admin-card" style="display:none;">
+                <h3 class="card-title">Panel admin</h3>
+                <div class="form-row">
+                    <input type="text" id="delete-user-id" placeholder="ID usuario">
+                    <button class="btn-danger" onclick="deleteUser()">Eliminar</button>
+                </div>
+                <p class="form-msg" id="delete-user-msg"></p>
+                <div style="margin-top:1rem;">
+                    <h4 style="color:#666; font-size:0.85rem; margin-bottom:0.5rem;">Usuarios registrados</h4>
+                    <div id="users-list" class="users-mini-list"></div>
+                </div>
+            </div>
+
+        </div>
     </div>
-
-    <div class="form-group">
-        <label>Descripción</label>
-
-        <input
-            type="text"
-            id="item-description"
-            placeholder="Descripción opcional"
-        >
-    </div>
-
-    <button class="primary-btn" onclick="createItem()">
-        Crear Item
-    </button>
-
-    <p id="create-item-message"></p>
-
 </div>
 
-    
-
-        <div class="card">
-            <h2>Items</h2>
-            <table>
-                <thead><tr>
-                    <th>ID</th><th>Nombre</th><th>Cantidad</th>
-                </tr></thead>
-                <tbody id="items-list">
-                    <tr><td colspan="3" class="loading">Cargando...</td></tr>
-                </tbody>
-            </table>
-            <p id="items-total" style="margin-top: 0.75rem; color: #666; font-size: 0.9rem; font-weight: 600;"></p>
-        </div>
-    </div>
-   <script src="/static/home.js"></script>
+<div id="toast-container"></div>
+<script src="/static/home.js"></script>
 </body>
 </html>

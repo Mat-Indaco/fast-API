@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guía de estudio — Entrevista FastAPI</title>
+<style>
+  :root{
+    --bg:#0f1117; --card:#1a1d27; --card2:#21252f; --border:#2c313d;
+    --text:#e6e8ee; --muted:#9aa3b2; --accent:#4f9cf9; --accent2:#3ddc91;
+    --warn:#f2b541; --code-bg:#11141b; --tag:#2a3550;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.6;
+  }
+  .wrap{max-width:860px; margin:0 auto; padding:32px 20px 80px}
+  header{margin-bottom:28px}
+  h1{font-size:1.7rem; margin:0 0 6px}
+  .sub{color:var(--muted); font-size:.95rem}
+  .meta{display:flex; gap:8px; flex-wrap:wrap; margin-top:14px}
+  .chip{background:var(--tag); color:#cdd6ea; font-size:.72rem; padding:4px 10px; border-radius:999px; letter-spacing:.3px}
+  .controls{display:flex; gap:10px; margin:22px 0 8px}
+  .btn{
+    background:var(--card2); color:var(--text); border:1px solid var(--border);
+    padding:8px 14px; border-radius:8px; font-size:.85rem; cursor:pointer; transition:.15s;
+  }
+  .btn:hover{border-color:var(--accent); color:#fff}
+  .progress{color:var(--muted); font-size:.8rem; margin-left:auto; align-self:center}
+
+  .card{
+    background:var(--card); border:1px solid var(--border); border-radius:12px;
+    margin:14px 0; overflow:hidden;
+  }
+  .q{
+    display:flex; gap:14px; align-items:flex-start; padding:18px 20px; cursor:pointer;
+    user-select:none;
+  }
+  .q:hover{background:var(--card2)}
+  .num{
+    flex:0 0 auto; width:30px; height:30px; border-radius:8px; background:var(--accent);
+    color:#06224a; font-weight:700; display:flex; align-items:center; justify-content:center; font-size:.85rem;
+  }
+  .q.crit .num{background:var(--warn); color:#3a2c00}
+  .qtext{flex:1; font-weight:600; font-size:1.02rem}
+  .qtext .badge{
+    display:inline-block; font-size:.66rem; font-weight:700; color:#3a2c00; background:var(--warn);
+    padding:2px 7px; border-radius:6px; margin-left:8px; vertical-align:middle; letter-spacing:.4px;
+  }
+  .arrow{flex:0 0 auto; color:var(--muted); transition:transform .2s; margin-top:3px}
+  .card.open .arrow{transform:rotate(90deg)}
+  .a{
+    max-height:0; overflow:hidden; transition:max-height .3s ease;
+    border-top:1px solid transparent;
+  }
+  .card.open .a{max-height:3000px; border-top:1px solid var(--border)}
+  .a-inner{padding:18px 20px 22px}
+  .a-inner p{margin:0 0 12px}
+  .a-inner p:last-child{margin-bottom:0}
+  .a-inner strong{color:#fff}
+  .tip{
+    background:rgba(61,220,145,.08); border-left:3px solid var(--accent2);
+    padding:10px 14px; border-radius:6px; margin-top:6px; font-size:.92rem; color:#cfe9da;
+  }
+  code{
+    background:var(--code-bg); padding:2px 6px; border-radius:5px; font-size:.86em;
+    font-family:'SF Mono',Menlo,Consolas,monospace; color:#9fd0ff;
+  }
+  .section-label{
+    color:var(--muted); font-size:.78rem; text-transform:uppercase; letter-spacing:1px;
+    margin:30px 0 4px; font-weight:600;
+  }
+  footer{margin-top:40px; color:var(--muted); font-size:.8rem; text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Guía de estudio — Entrevista técnica</h1>
+    <div class="sub">Test técnico FastAPI · Respuestas modelo para preparar la defensa del proyecto</div>
+    <div class="meta">
+      <span class="chip">FastAPI</span>
+      <span class="chip">JWT / OAuth2</span>
+      <span class="chip">SQLModel</span>
+      <span class="chip">argon2</span>
+      <span class="chip">PostgreSQL</span>
+      <span class="chip">Docker</span>
+      <span class="chip">Node / NestJS</span>
+    </div>
+  </header>
+
+  <div class="controls">
+    <button class="btn" id="expandAll">Expandir todo</button>
+    <button class="btn" id="collapseAll">Plegar todo</button>
+    <span class="progress" id="progress"></span>
+  </div>
+
+  <div class="section-label">Sobre tu proyecto</div>
+
+  <!-- 3 -->
+  <div class="card crit">
+    <div class="q crit">
+      <div class="num">3</div>
+      <div class="qtext">SECRET_KEY con fallback inseguro y <code>.env</code> en el repo <span class="badge">SEGURIDAD</span></div>
+      <div class="arrow">▶</div>
+    </div>
+    <div class="a"><div class="a-inner">
+      <p>El problema es doble. Primero, el fallback <code>"changeme-insecure-default"</code>: si la variable de entorno no se carga, la app arranca igual con una clave que cualquiera que vio mi repo conoce. Con esa clave un atacante puede firmar sus propios JWT con <code>"sub": "admin"</code> y entrar como administrador sin contraseña. La firma HS256 solo es segura si la clave es secreta.</p>
+      <p>Segundo, mi <code>.env</code> con el <code>SECRET_KEY</code> real está commiteado en el repo, así que el secreto ya está expuesto de hecho.</p>
+      <p><strong>Cómo lo corregiría:</strong> que la app falle al arrancar si no existe la clave (<code>os.environ["SECRET_KEY"]</code> sin default, o validándolo con pydantic-settings), nunca un fallback. Sacar <code>.env</code> del repo, agregarlo a <code>.gitignore</code>, dejar solo un <code>.env.example</code> sin valores reales, y rotar la clave porque ya quedó comprometida. En producción la clave va en un gestor de secretos, no en un archivo.</p>
+    </div></div>
+  </div>
+
+  <!-- 5 -->
+  <div class="card">
+    <div class="q">
+      <div class="num">5</div>
+      <div class="qtext">Flujo completo del login</div>
+      <div class="arrow">▶</div>
+    </div>
+    <div class="a"><div class="a-inner">
+      <p>El cliente hace <code>POST /login</code> con <code>username</code> y <code>password</code> como form-data. FastAPI los parsea con <code>OAuth2PasswordRequestForm</code> (por eso es form y no JSON: es el estándar OAuth2). Llamo a <code>authenticate_user</code>, que busca el usuario por username y, si existe, compara la contraseña con <code>verify_password</code>, que internamente usa argon2 para hashear la contraseña recibida y compararla con el hash guardado. Nunca comparo texto plano.</p>
+      <p>Si las credenciales son válidas, genero el token con <code>create_access_token</code>, que arma un payload con <code>sub</code> (el username), <code>role</code>, y un <code>exp</code> (ahora + 30 min), y lo firma con la <code>SECRET_KEY</code> y HS256. Devuelvo <code>{access_token, token_type: "bearer"}</code>.</p>
+      <p>A partir de ahí, en cada request a un endpoint protegido el cliente manda <code>Authorization: Bearer &lt;token&gt;</code>. <code>OAuth2PasswordBearer</code> extrae el token, y <code>get_current_user</code> lo decodifica con <code>jwt.decode</code> (verifica firma y expiración), saca el <code>sub</code>, busca ese usuario en la DB y lo devuelve. Si el token es inválido, expiró, o el usuario no existe, tiro 401. Los endpoints que dependen de <code>get_current_user</code> reciben el usuario ya autenticado por inyección de dependencias.</p>
+    </div></div>
+  </div>
+
+  <!-- 6 -->
+  <div class="card">
+    <div class="q">
+      <div class="num">6</div>
+      <div class="qtext"><code>role</code> en el token pero <code>require_admin</code> re-consulta la DB</div>
+      <div class="arrow">▶</div>
+    </div>
+    <div class="a"><div class="a-inner">
+      <p>Es una decisión sobre confiar en el token vs. confiar en la base. Meto el <code>role</code> en el JWT, pero a la hora de autorizar (<code>require_admin</code>) leo el rol desde el usuario que <code>get_current_user</code> trajo de la DB, no desde el token.</p>
+      <p><strong>Ventaja de re-consultar:</strong> el dato siempre está fresco. Si a un usuario le saco el rol de admin, pierde permisos en su próxima request aunque su token viejo todavía diga <code>"role": "admin"</code>. El token es inmutable hasta que expira; la DB es la fuente de verdad. <strong>Desventaja:</strong> una query extra a la DB en cada request protegida.</p>
+      <p>Si confiara solo en el token me ahorro la query (más rápido, escala mejor, es la gracia de un JWT stateless), pero quedo con el problema de revocación: un cambio de rol no tiene efecto hasta que el token expira. En este proyecto, como ya consulto la DB para traer el usuario, aprovecho y leo el rol de ahí; el <code>role</code> del token es redundante. En un sistema de alto tráfico evaluaría confiar en el claim del token y aceptar tokens de vida corta + refresh para mitigar la revocación.</p>
+    </div></div>
+  </div>
+
+  <!-- 7 -->
+  <div class="card">
+    <div class="q">
+      <div class="num">7</div>
+      <div class="qtext">Por qué argon2 y qué es un salt</div>
+      <div class="arrow">▶</div>
+    </div>
+    <div class="a"><div class="a-inner">
+      <p>Uso argon2 (vía pwdlib) porque es un algoritmo de hashing diseñado específicamente para contraseñas: ganó la Password Hashing Competition y es el recomendado hoy. La clave es que es <strong>deliberadamente lento</strong> y consume memoria, lo que hace carísimo un ataque de fuerza bruta.</p>
+      <p><code>SHA-256</code> es lo contrario: es rápido y pensado para integridad, no para contraseñas — un atacante puede probar miles de millones de hashes por segundo, así que nunca se usa para passwords. <code>bcrypt</code> sería una alternativa válida y aceptada, pero argon2 es más moderno y resistente a ataques con GPU/ASIC por su uso de memoria.</p>
+      <p>Un <strong>salt</strong> es un valor aleatorio único que se agrega a cada contraseña antes de hashearla. Sirve para que dos usuarios con la misma contraseña tengan hashes distintos, y para que no se puedan usar rainbow tables (tablas precomputadas de hash→password). argon2 genera y guarda el salt automáticamente dentro del propio string del hash, por eso no lo manejo a mano.</p>
+    </div></div>
+  </div>
+
+  <!-- 8 -->
+  <div class="card">
+    <div class="q">
+      <div class="num">8</div>
+      <div class="qtext">Refresh tokens</div>
+      <div class="arrow">▶</div>
+    </div>
+    <div class="a"><div class="a-inner">
+      <p>Hoy mi access token dura 30 minutos y no hay refresh: cuando expira, el usuario tiene que volver a loguearse. El patrón estándar es tener <strong>dos tokens</strong>. Un access token de vida corta (15–30 min) que viaja en cada request, y un refresh token de vida larga (días o semanas) que solo se usa contra un endpoint <code>/refresh</code> para obtener un access token nuevo sin reingresar credenciales.</p>
+      <p><strong>Dónde guardarlos:</strong> el refresh token idealmente en una cookie <code>httpOnly</code>, <code>Secure</code> y <code>SameSite</code>, para que el JavaScript del navegador no pueda leerlo y mitigar XSS. El access token puede ir en memoria del cliente.</p>
+      <p>Además, para poder revocar, guardaría los refresh tokens en la DB (o Redis) con su estado, de modo que un logout o un robo de token se pueda invalidar del lado servidor — esto resuelve justo el problema de revocación de la pregunta 6. Una práctica adicional es la <strong>rotación</strong>: cada vez que se usa un refresh token, se invalida y se emite uno nuevo, así detectás reutilización.</p>
+    </div></div>
+  </div>
+
+  <!-- 10 -->
+  <div class="card">
+    <div class="q">
+      <div class="num">10</div>
+      <div class="qtext">Condición de carrera en <code>create_item</code></div>
+      <div class="arrow">▶</div>
+    </div>
+    <div class="a"><div class="a-inner">
+      <p>En <code>create_item</code>, cuando el item ya existe, hago: leo el item, le sumo <code>cant</code>, y guardo. Eso es un patrón <strong>read-modify-write</strong> que no es atómico. Si llegan dos requests concurrentes del mismo usuario con el mismo título, ambas pueden leer <code>cant=5</code> al mismo tiempo, una suma 3 y guarda 8, la otra también leyó 5, suma 2 y guarda 7 — se pierde una actualización (<em>lost update</em>). El total queda mal.</p>
+      <p><strong>Cómo lo resolvería:</strong> la forma más limpia es hacer la suma en la base de datos de forma atómica, con un <code>UPDATE items SET cant = cant + :n WHERE ...</code> en vez de leer-en-Python-y-escribir; la DB serializa esa operación. Otra opción es un lock pesimista (<code>SELECT ... FOR UPDATE</code>) para bloquear la fila, o un control optimista con una columna de versión que detecte el conflicto y reintente.</p>
+      <p>Y para garantizar la unicidad real conviene un constraint <code>UNIQUE(owner_id, title)</code> en la tabla, así la integridad no depende solo de mi chequeo en código.</p>
+      <div class="tip">Nota: con SQLite esto casi no se nota por su locking de archivo, pero en PostgreSQL con concurrencia real es un bug que aparece.</div>
+    </div></div>
+  </div>
+
+  <div class="section-label">Sobre el puesto / stack general</div>
+
+  <!-- 17 -->
+  <div class="card">
+    <div class="q">
+      <div class="num">17</div>
+      <div class="qtext">Optimizar <code>/users/</code> cuando va lento</div>
+      <div class="arrow">▶</div>
+    </div>
+    <div class="a"><div class="a-inner">
+      <p>Primero <strong>mido, no adivino</strong>. Miro el tiempo de la request y el <code>EXPLAIN ANALYZE</code> de la query para ver si hace un sequential scan, y reviso logs de queries lentas. Las causas típicas y sus soluciones:</p>
+      <p><strong>Índices:</strong> si filtro u ordeno por una columna sin índice, agrego uno (en mi modelo ya tengo <code>username</code> e <code>Item.title</code> indexados).</p>
+      <p><strong>Paginación:</strong> ya la tengo con <code>offset/limit</code>, pero un <code>OFFSET</code> grande es lento porque la DB igual recorre las filas saltadas; en tablas grandes pasaría a keyset pagination (paginar por <code>id &gt; último_visto</code>).</p>
+      <p><strong>N+1:</strong> el problema clásico — si por cada usuario hiciera una query para traer sus items, son cientos de queries; se resuelve con un join o <code>selectinload</code> para traer todo en una o dos queries.</p>
+      <p><strong>Payload:</strong> devolver solo las columnas necesarias con un <code>response_model</code> acotado. Y si el dato se consulta mucho y cambia poco, una capa de caché con Redis. La regla es: medir, encontrar el cuello de botella real, y recién ahí optimizar.</p>
+    </div></div>
+  </div>
+
+  <!-- 19 -->
+  <div class="card">
+    <div class="q">
+      <div class="num">19</div>
+      <div class="qtext">Express / NestJS vs FastAPI</div>
+      <div class="arrow">▶</div>
+    </div>
+    <div class="a"><div class="a-inner">
+      <p>Las tres son buenas para APIs REST; la elección depende del contexto. <strong>FastAPI</strong> me da validación y serialización automática con Pydantic basada en type hints, documentación OpenAPI/Swagger gratis, y soporte async nativo, con muy poco código. <strong>NestJS</strong> es muy parecido en filosofía a FastAPI pero en TypeScript: arquitectura opinada con módulos, inyección de dependencias y decoradores, ideal para equipos grandes y proyectos que necesitan estructura. <strong>Express</strong> es minimalista y sin opiniones: máxima libertad pero tenés que armar vos validación, estructura y middlewares.</p>
+      <p><strong>Cuándo elijo cada uno:</strong> FastAPI/Python si el proyecto tiene componente de datos, ML o cálculo científico, o si el equipo es Python. Node (Nest o Express) si el equipo ya es full JS/TS y quiero compartir tipos y lógica entre front y back, o por el ecosistema npm. Nest sobre Express cuando el proyecto va a crecer y quiero convenciones desde el día uno; Express para algo chico o un microservicio simple.</p>
+      <p>En rendimiento crudo de I/O son comparables; la diferencia real suele estar en el lenguaje del equipo y la mantenibilidad.</p>
+    </div></div>
+  </div>
+
+  <!-- 20 -->
+  <div class="card">
+    <div class="q">
+      <div class="num">20</div>
+      <div class="qtext">Despliegue a producción</div>
+      <div class="arrow">▶</div>
+    </div>
+    <div class="a"><div class="a-inner">
+      <p>Arrancaría desde lo que ya tengo (Dockerfile + compose + CI) y le sumaría lo que falta para producción.</p>
+      <p><strong>Configuración y secretos:</strong> nada de <code>.env</code> en el repo; las variables (<code>SECRET_KEY</code>, credenciales de DB) van inyectadas por el entorno o un gestor de secretos.</p>
+      <p><strong>Base de datos:</strong> migrar de SQLite a PostgreSQL gestionado, y correr las migraciones de Alembic en el deploy (ya lo hago en el <code>entrypoint.sh</code>).</p>
+      <p><strong>Servidor:</strong> en vez de un solo uvicorn, uvicorn con varios workers gestionados por gunicorn para aprovechar todos los cores.</p>
+      <p><strong>Red y seguridad:</strong> un reverse proxy (Nginx o el del cloud) que termine HTTPS/TLS, CORS configurado para permitir solo mi front, y headers de seguridad.</p>
+      <p><strong>Observabilidad:</strong> ya tengo <code>sentry-sdk</code> para errores; sumaría logging estructurado y un <code>/health</code> para que el orquestador sepa si la app está viva.</p>
+      <p><strong>CI/CD:</strong> mi pipeline ya corre lint y tests; lo extendería para que, si pasa, construya la imagen Docker y la despliegue automáticamente. Y antes de exponerlo, cerrar los agujeros ya identificados: el registro de admins, los endpoints sin auth y el secret comprometido.</p>
+    </div></div>
+  </div>
+
+  <footer>Estudiá pregunta por pregunta: tapá la respuesta, contestá en voz alta, y recién ahí abrí la tarjeta para comparar.</footer>
+</div>
+
+<script>
+  const cards = Array.from(document.querySelectorAll('.card'));
+  const progress = document.getElementById('progress');
+  function updateProgress(){
+    const open = cards.filter(c=>c.classList.contains('open')).length;
+    progress.textContent = open + ' / ' + cards.length + ' abiertas';
+  }
+  cards.forEach(card=>{
+    card.querySelector('.q').addEventListener('click', ()=>{
+      card.classList.toggle('open');
+      updateProgress();
+    });
+  });
+  document.getElementById('expandAll').addEventListener('click', ()=>{
+    cards.forEach(c=>c.classList.add('open')); updateProgress();
+  });
+  document.getElementById('collapseAll').addEventListener('click', ()=>{
+    cards.forEach(c=>c.classList.remove('open')); updateProgress();
+  });
+  updateProgress();
+</script>
+</body>
+</html>

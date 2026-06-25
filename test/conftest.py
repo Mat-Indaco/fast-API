@@ -2,11 +2,20 @@ import pytest
 
 from sqlmodel import SQLModel, create_engine, Session
 from fastapi.testclient import TestClient
-
 from sqlalchemy.pool import StaticPool
 
 from main import app
+from limiter import limiter
 from db import get_session
+
+
+@pytest.fixture(autouse=True)
+def disable_rate_limit():
+    limiter.reset()
+    original = limiter.enabled
+    limiter.enabled = False
+    yield
+    limiter.enabled = original
 
 
 sqlite_url = "sqlite://"

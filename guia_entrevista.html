@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guía de entrevista — FastAPI Challenge</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #f5f4f0; color: #1a1a18; line-height: 1.6; }
+header { background: #26215C; color: #EEEDFE; padding: 2rem 2rem 1.5rem; }
+header h1 { font-size: 1.5rem; font-weight: 500; margin-bottom: 0.25rem; }
+header p { font-size: 0.9rem; color: #AFA9EC; }
+.progress-bar { background: #3C3489; height: 4px; }
+.progress-fill { background: #9FE1CB; height: 4px; transition: width 0.3s; }
+nav { background: #fff; border-bottom: 0.5px solid #d3d1c7; display: flex; overflow-x: auto; }
+nav button { background: none; border: none; padding: 0.85rem 1.1rem; font-size: 0.83rem; color: #5f5e5a; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: color 0.15s, border-color 0.15s; }
+nav button:hover { color: #26215C; }
+nav button.active { color: #26215C; border-bottom-color: #534AB7; font-weight: 500; }
+main { max-width: 880px; margin: 0 auto; padding: 2rem 1.5rem; }
+.section { display: none; }
+.section.active { display: block; }
+h2 { font-size: 1.2rem; font-weight: 500; margin-bottom: 1.25rem; color: #26215C; }
+h3 { font-size: 1rem; font-weight: 500; margin-bottom: 0.5rem; }
+.card { background: #fff; border: 0.5px solid #d3d1c7; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+
+/* Day grid */
+.day-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
+.day-card { background: #fff; border: 0.5px solid #d3d1c7; border-radius: 12px; padding: 1rem; cursor: pointer; transition: border-color 0.15s; }
+.day-card:hover { border-color: #534AB7; }
+.day-card.done { border-left: 3px solid #1D9E75; }
+.day-num { font-size: 0.72rem; color: #888780; margin-bottom: 0.25rem; }
+.day-title { font-size: 0.88rem; font-weight: 500; color: #26215C; }
+.day-check { float: right; color: #1D9E75; display: none; }
+.day-card.done .day-check { display: inline; }
+
+/* Study sections */
+.study-block { background: #fff; border: 0.5px solid #d3d1c7; border-radius: 12px; margin-bottom: 1rem; overflow: hidden; }
+.study-header { padding: 1rem 1.25rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #EEEDFE; }
+.study-header h3 { color: #26215C; margin: 0; font-size: 0.95rem; }
+.study-body { display: none; padding: 1.25rem; }
+.study-block.open .study-body { display: block; }
+.study-block.open .study-header { background: #EEEDFE; }
+.chevron { font-size: 0.7rem; color: #534AB7; transition: transform 0.2s; }
+.study-block.open .chevron { transform: rotate(180deg); }
+
+p { font-size: 0.88rem; color: #444441; margin-bottom: 0.6rem; }
+ul, ol { padding-left: 1.25rem; margin-bottom: 0.6rem; }
+li { font-size: 0.88rem; color: #444441; margin-bottom: 0.3rem; }
+code { background: #f1efe8; border-radius: 4px; padding: 0.1em 0.4em; font-family: monospace; font-size: 0.82em; color: #26215C; }
+pre { background: #f1efe8; border-radius: 8px; padding: 0.85rem 1rem; margin: 0.75rem 0; overflow-x: auto; font-size: 0.82rem; font-family: monospace; line-height: 1.55; color: #26215C; }
+
+/* Annotated code */
+.code-annotated { background: #f1efe8; border-radius: 8px; margin: 0.75rem 0; overflow-x: auto; }
+.code-annotated table { width: 100%; border-collapse: collapse; font-family: monospace; font-size: 0.82rem; }
+.code-annotated tr { border-bottom: 0.5px solid #e3e1d9; }
+.code-annotated tr:last-child { border-bottom: none; }
+.code-annotated tr:hover { background: #e9e7df; }
+.code-line { padding: 0.3rem 1rem; white-space: pre; color: #26215C; vertical-align: top; width: 55%; }
+.code-note { padding: 0.3rem 1rem; font-size: 0.78rem; color: #5f5e5a; font-family: system-ui, sans-serif; vertical-align: top; border-left: 0.5px solid #d3d1c7; }
+.code-note.highlight { color: #185FA5; font-weight: 500; }
+
+/* Badges */
+.badge { display: inline-block; font-size: 0.7rem; padding: 2px 8px; border-radius: 6px; font-weight: 500; margin-left: 0.5rem; vertical-align: middle; }
+.badge-blue { background: #E6F1FB; color: #185FA5; }
+.badge-green { background: #EAF3DE; color: #3B6D11; }
+.badge-amber { background: #FAEEDA; color: #854F0B; }
+.badge-purple { background: #EEEDFE; color: #3C3489; }
+.badge-red { background: #FCEBEB; color: #A32D2D; }
+
+/* Questions */
+.question { background: #fff; border: 0.5px solid #d3d1c7; border-radius: 12px; margin-bottom: 0.75rem; overflow: hidden; }
+.question-header { padding: 1rem 1.25rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.question-header:hover { background: #f5f4f0; }
+.question-text { font-size: 0.88rem; font-weight: 500; color: #1a1a18; }
+.q-meta { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+.question-cat { font-size: 0.72rem; color: #888780; white-space: nowrap; }
+.q-chevron { font-size: 0.7rem; color: #888780; transition: transform 0.2s; }
+.question.open .q-chevron { transform: rotate(180deg); }
+.answer { display: none; padding: 0 1.25rem 1.1rem; font-size: 0.87rem; border-top: 0.5px solid #f1efe8; color: #444441; }
+.question.open .answer { display: block; }
+.answer p { margin-top: 0.65rem; }
+
+/* Tips */
+.tip { background: #E1F5EE; border-left: 3px solid #1D9E75; border-radius: 0 8px 8px 0; padding: 0.65rem 1rem; margin-top: 0.75rem; font-size: 0.84rem; color: #085041; }
+.warn { background: #FAEEDA; border-left: 3px solid #EF9F27; border-radius: 0 8px 8px 0; padding: 0.65rem 1rem; margin-top: 0.75rem; font-size: 0.84rem; color: #633806; }
+.info { background: #E6F1FB; border-left: 3px solid #378ADD; border-radius: 0 8px 8px 0; padding: 0.65rem 1rem; margin-top: 0.75rem; font-size: 0.84rem; color: #042C53; }
+
+/* Filters */
+.filter-bar { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+.filter-btn { background: #fff; border: 0.5px solid #d3d1c7; border-radius: 20px; padding: 0.3rem 0.9rem; font-size: 0.8rem; cursor: pointer; color: #5f5e5a; transition: all 0.15s; }
+.filter-btn:hover, .filter-btn.active { background: #EEEDFE; border-color: #534AB7; color: #3C3489; }
+
+/* Key grid */
+.key-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 600px) { .key-grid { grid-template-columns: 1fr; } }
+.key-card { background: #fff; border: 0.5px solid #d3d1c7; border-radius: 12px; padding: 1.25rem; }
+.key-icon { font-size: 1.2rem; margin-bottom: 0.4rem; }
+.key-title { font-size: 0.88rem; font-weight: 500; margin-bottom: 0.4rem; color: #26215C; }
+.key-desc { font-size: 0.83rem; color: #5f5e5a; }
+
+/* Topic list */
+.topic-list { list-style: none; padding: 0; }
+.topic-list li { padding: 0.45rem 0; border-bottom: 0.5px solid #f1efe8; font-size: 0.88rem; display: flex; gap: 0.5rem; }
+.topic-list li:last-child { border-bottom: none; }
+.topic-list li::before { content: "·"; color: #534AB7; font-weight: 700; flex-shrink: 0; }
+
+/* Step annotation */
+.step { display: flex; gap: 0.75rem; margin-bottom: 0.75rem; align-items: flex-start; }
+.step-num { background: #534AB7; color: #fff; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 500; flex-shrink: 0; margin-top: 2px; }
+.step-body { font-size: 0.87rem; color: #444441; }
+.step-body strong { color: #26215C; font-weight: 500; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Guía de entrevista — FastAPI Challenge</h1>
+  <p>5 días · Matías Indaco · Código Libre</p>
+</header>
+<div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+
+<nav>
+  <button class="active" onclick="showSection('plan', this)">📅 Plan</button>
+  <button onclick="showSection('estudio', this)">📚 Material de estudio</button>
+  <button onclick="showSection('js', this)">🔍 JS explicado</button>
+  <button onclick="showSection('preguntas', this)">❓ Preguntas</button>
+  <button onclick="showSection('puntos', this)">🎯 Puntos clave</button>
+</nav>
+
+<main>
+
+<!-- ==================== PLAN ==================== -->
+<div id="plan" class="section active">
+  <h2>Plan de 5 días</h2>
+  <div class="day-grid">
+    <div class="day-card" id="d1" onclick="toggleDay(1)"><div class="day-check">✓</div><div class="day-num">Día 1</div><div class="day-title">FastAPI + JWT</div></div>
+    <div class="day-card" id="d2" onclick="toggleDay(2)"><div class="day-check">✓</div><div class="day-num">Día 2</div><div class="day-title">DB + ORM + Alembic</div></div>
+    <div class="day-card" id="d3" onclick="toggleDay(3)"><div class="day-check">✓</div><div class="day-num">Día 3</div><div class="day-title">Testing</div></div>
+    <div class="day-card" id="d4" onclick="toggleDay(4)"><div class="day-check">✓</div><div class="day-num">Día 4</div><div class="day-title">Docker</div></div>
+    <div class="day-card" id="d5" onclick="toggleDay(5)"><div class="day-check">✓</div><div class="day-num">Día 5</div><div class="day-title">Repaso + simulacro</div></div>
+  </div>
+
+  <div class="card">
+    <h3>Día 1 — FastAPI y autenticación JWT <span class="badge badge-purple">Core</span></h3>
+    <ul class="topic-list">
+      <li>Qué es FastAPI y por qué usarlo (tipado, async, OpenAPI automático)</li>
+      <li>Cómo funciona el flujo completo: login → JWT → request protegido</li>
+      <li>Qué hace <code>OAuth2PasswordBearer</code> y <code>OAuth2PasswordRequestForm</code></li>
+      <li>Qué es <code>Depends()</code> y cómo encadena <code>get_current_user</code> y <code>require_admin</code></li>
+      <li>Diferencia entre <code>hash_password</code> y <code>verify_password</code></li>
+      <li>Por qué <code>UserRead</code> no incluye <code>hashed_password</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Día 2 — Base de datos, SQLModel y Alembic <span class="badge badge-blue">DB</span></h3>
+    <ul class="topic-list">
+      <li>Diferencia entre SQLAlchemy, SQLModel y Pydantic</li>
+      <li>Qué es un ORM y qué ventajas tiene sobre SQL crudo</li>
+      <li>Cómo funciona <code>SessionDep</code> y el patrón <code>yield</code> en <code>get_session</code></li>
+      <li>Para qué sirven las migraciones y por qué Alembic en vez de <code>create_all</code></li>
+      <li>Relación User → Item: cómo se define la FK con <code>Field(foreign_key=...)</code></li>
+      <li><code>session.add</code> vs <code>session.commit</code> vs <code>session.refresh</code></li>
+      <li>Por qué <code>model_dump(exclude_unset=True)</code> en el PATCH</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Día 3 — Testing <span class="badge badge-green">Tests</span></h3>
+    <ul class="topic-list">
+      <li>Por qué los tests usan SQLite en memoria (<code>sqlite://</code> sin path)</li>
+      <li>Qué hace <code>app.dependency_overrides</code> y por qué es clave</li>
+      <li>Qué es un fixture en pytest, cómo funciona <code>yield</code> y el teardown</li>
+      <li>Por qué <code>StaticPool</code> y <code>check_same_thread: False</code></li>
+      <li>Tipos de tests que escribiste: happy path, duplicados, permisos, 404</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Día 4 — Docker <span class="badge badge-amber">DevOps</span></h3>
+    <ul class="topic-list">
+      <li>Qué hace cada instrucción del Dockerfile: <code>FROM</code>, <code>COPY</code>, <code>RUN</code>, <code>EXPOSE</code>, <code>CMD</code></li>
+      <li>Por qué se usan dos <code>RUN uv sync</code> (caching de capas)</li>
+      <li>Qué hace el <code>entrypoint.sh</code> y el orden importa</li>
+      <li>Cómo funciona el volumen y por qué es necesario con SQLite</li>
+      <li>Diferencia entre <code>environment:</code> y <code>env_file:</code> en compose</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Día 5 — Repaso + simulacro <span class="badge badge-purple">Final</span></h3>
+    <ul class="topic-list">
+      <li>Recorrer el proyecto de punta a punta en voz alta sin mirar</li>
+      <li>Practicar las preguntas difíciles de la sección Preguntas</li>
+      <li>Preparar respuesta a "¿qué mejorarías?" (PostgreSQL, refresh tokens, fix del PATCH)</li>
+      <li>Repasar el JS explicado — poder describirlo en la entrevista</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ==================== MATERIAL DE ESTUDIO ==================== -->
+<div id="estudio" class="section">
+  <h2>Material de estudio</h2>
+
+  <div class="study-block open">
+    <div class="study-header" onclick="toggleStudy(this)">
+      <h3>¿Qué es FastAPI?</h3><span class="chevron">▼</span>
+    </div>
+    <div class="study-body">
+      <p>FastAPI es un framework web Python moderno y de alto rendimiento para construir APIs. Sus ventajas principales:</p>
+      <ul>
+        <li><strong>Tipado nativo:</strong> usa type hints de Python para validar datos automáticamente con Pydantic.</li>
+        <li><strong>Documentación automática:</strong> genera Swagger UI en <code>/docs</code> y ReDoc en <code>/redoc</code> sin configuración extra.</li>
+        <li><strong>Async nativo:</strong> soporta <code>async/await</code> para operaciones concurrentes.</li>
+        <li><strong>Inyección de dependencias:</strong> sistema de <code>Depends()</code> para compartir lógica entre endpoints.</li>
+      </ul>
+      <pre># Ejemplo mínimo
+from fastapi import FastAPI
+app = FastAPI()
+
+@app.get("/items/{item_id}")
+def read_item(item_id: int):  # FastAPI valida que item_id sea int
+    return {"id": item_id}</pre>
+      <div class="info">En tu proyecto, los routers (<code>users</code>, <code>items</code>, <code>auth</code>) se registran con <code>app.include_router()</code> para separar el código por dominio.</div>
+    </div>
+  </div>
+
+  <div class="study-block">
+    <div class="study-header" onclick="toggleStudy(this)">
+      <h3>JWT — JSON Web Tokens</h3><span class="chevron">▼</span>
+    </div>
+    <div class="study-body">
+      <p>Un JWT es un token firmado que el servidor emite al autenticar a un usuario. Tiene tres partes separadas por puntos:</p>
+      <pre>eyJhbGciOiJIUzI1NiJ9  .  eyJzdWIiOiJhZG1pbiJ9  .  firma
+      HEADER                    PAYLOAD                 SIGNATURE</pre>
+      <ul>
+        <li><strong>Header:</strong> algoritmo de firma (en tu proyecto: <code>HS256</code>)</li>
+        <li><strong>Payload:</strong> datos del token. En tu proyecto: <code>sub</code> (username), <code>role</code>, <code>exp</code> (expiración)</li>
+        <li><strong>Signature:</strong> HMAC del header+payload firmado con la <code>SECRET_KEY</code>. Garantiza que no fue modificado.</li>
+      </ul>
+      <p>El payload <strong>no está encriptado</strong>, solo firmado. No guardes datos sensibles ahí.</p>
+      <h3 style="margin-top:1rem">Flujo completo en tu proyecto:</h3>
+      <div class="step"><div class="step-num">1</div><div class="step-body">Cliente hace <code>POST /login</code> con <code>username</code> y <code>password</code></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-body"><code>authenticate_user</code> busca el usuario en la DB y llama a <code>verify_password</code></div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-body"><code>create_access_token</code> genera un JWT firmado con <code>SECRET_KEY</code>, expira en 30 min</div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-body">Cliente guarda el token en <code>localStorage</code> y lo manda en cada request: <code>Authorization: Bearer &lt;token&gt;</code></div></div>
+      <div class="step"><div class="step-num">5</div><div class="step-body"><code>get_current_user</code> decodifica el JWT, extrae el <code>sub</code> (username), busca el usuario en la DB y lo devuelve</div></div>
+      <div class="warn">JWT es stateless — el servidor no guarda los tokens. No se pueden invalidar sin una blacklist o cambiar la SECRET_KEY.</div>
+    </div>
+  </div>
+
+  <div class="study-block">
+    <div class="study-header" onclick="toggleStudy(this)">
+      <h3>Depends() — Inyección de dependencias</h3><span class="chevron">▼</span>
+    </div>
+    <div class="study-body">
+      <p>FastAPI resuelve automáticamente las dependencias declaradas con <code>Depends()</code> antes de ejecutar el endpoint. Se pueden encadenar:</p>
+      <pre># get_current_user verifica el JWT
+def get_current_user(token = Depends(oauth2_scheme), session = Depends(get_session)):
+    payload = jwt.decode(token, SECRET_KEY, ...)
+    user = session.exec(select(User).where(...)).first()
+    return user
+
+# require_admin usa get_current_user como dependencia
+def require_admin(current_user = Depends(get_current_user)):
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(403)
+    return current_user
+
+# El endpoint solo declara require_admin, FastAPI resuelve la cadena
+@router.delete("/{user_id}")
+def delete_user(current_user = Depends(require_admin)):
+    ...</pre>
+      <div class="tip">Ventaja: si la lógica de autenticación cambia, la cambiás en un solo lugar y afecta a todos los endpoints que la usan.</div>
+    </div>
+  </div>
+
+  <div class="study-block">
+    <div class="study-header" onclick="toggleStudy(this)">
+      <h3>SQLModel — Modelos y Schemas</h3><span class="chevron">▼</span>
+    </div>
+    <div class="study-body">
+      <p>SQLModel une SQLAlchemy (ORM para DB) con Pydantic (validación). Los modelos con <code>table=True</code> son tablas en la DB; los sin <code>table=True</code> son schemas de validación.</p>
+      <pre># models.py — tabla real en la DB
+class User(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    username: str = Field(index=True)  # índice para búsquedas rápidas
+    hashed_password: str               # nunca la password en texto plano
+    role: UserRole = Field(default=UserRole.USER)
+
+# schemas.py — lo que entra y sale por la API
+class UserCreate(UserBase):
+    password: str  # recibe la password en texto plano
+
+class UserRead(UserBase):
+    id: int
+    # ↑ NO incluye hashed_password — no se expone nunca</pre>
+      <p>El ciclo al crear un usuario:</p>
+      <div class="step"><div class="step-num">1</div><div class="step-body">FastAPI valida el request body contra <code>UserCreate</code></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-body"><code>create_user</code> hashea la password y crea un objeto <code>User</code> (modelo de DB)</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-body"><code>session.add()</code> + <code>session.commit()</code> persisten el objeto en SQLite</div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-body">FastAPI serializa la respuesta con <code>UserRead</code> — sin la password</div></div>
+    </div>
+  </div>
+
+  <div class="study-block">
+    <div class="study-header" onclick="toggleStudy(this)">
+      <h3>Alembic — Migraciones de base de datos</h3><span class="chevron">▼</span>
+    </div>
+    <div class="study-body">
+      <p>Una migración es un script que describe cómo evoluciona el esquema de la DB. En tu proyecto, Alembic corre automáticamente al levantar Docker.</p>
+      <ul>
+        <li><strong><code>create_all</code>:</strong> crea tablas que no existen, pero si la tabla ya tiene datos y cambiás el modelo, no hace nada.</li>
+        <li><strong>Alembic:</strong> genera scripts incrementales que podés aplicar (<code>upgrade</code>) y revertir (<code>downgrade</code>). Ideal para producción donde no podés borrar la DB.</li>
+      </ul>
+      <pre># Comandos que usaste
+alembic upgrade head     # aplica todas las migraciones pendientes
+alembic downgrade -1     # revierte la última migración</pre>
+      <div class="info">Tu <code>env.py</code> usa <code>SQLModel.metadata</code> como <code>target_metadata</code>. Esto permite a Alembic detectar los modelos automáticamente para generar migraciones con <code>alembic revision --autogenerate</code>.</div>
+    </div>
+  </div>
+
+  <div class="study-block">
+    <div class="study-header" onclick="toggleStudy(this)">
+      <h3>Testing con pytest y FastAPI</h3><span class="chevron">▼</span>
+    </div>
+    <div class="study-body">
+      <p>Tus tests usan tres piezas clave:</p>
+      <pre># 1. DB en memoria — no toca database.db
+engine = create_engine("sqlite://", poolclass=StaticPool,
+    connect_args={"check_same_thread": False})
+
+# 2. Fixture con yield — crea la DB, la usa, la destruye
+@pytest.fixture
+def session_fixture():
+    SQLModel.metadata.create_all(engine)   # setup
+    with Session(engine) as session:
+        yield session                       # ← acá corre el test
+    SQLModel.metadata.drop_all(engine)     # teardown
+
+# 3. Override de dependencias — reemplaza la DB real con la de tests
+def override_get_session():
+    return session
+
+app.dependency_overrides[get_session] = override_get_session</pre>
+      <p><strong>Tipos de tests que escribiste:</strong></p>
+      <ul>
+        <li><strong>Happy path:</strong> <code>test_create_user</code>, <code>test_create_item</code> — flujo normal, espera 200</li>
+        <li><strong>Validaciones:</strong> <code>test_create_user_username_duplicado</code> — espera 409</li>
+        <li><strong>Permisos:</strong> <code>test_user_sin_rol_admin_no_puede_borrar</code> — espera 403</li>
+        <li><strong>Not found:</strong> <code>test_get_user_inexistente</code> — espera 404</li>
+        <li><strong>Lógica de negocio:</strong> <code>test_item_repetido_suma_cantidad</code> — verifica la acumulación</li>
+      </ul>
+      <div class="tip"><code>StaticPool</code> fuerza a SQLAlchemy a reutilizar la misma conexión en memoria entre el fixture y el test. Sin esto, cada conexión nueva vería una DB vacía.</div>
+    </div>
+  </div>
+
+  <div class="study-block">
+    <div class="study-header" onclick="toggleStudy(this)">
+      <h3>Docker y docker-compose</h3><span class="chevron">▼</span>
+    </div>
+    <div class="study-body">
+      <p>Tu Dockerfile explicado línea por línea:</p>
+      <pre>FROM python:3.12-slim
+# imagen base: Python 3.12 mínima (sin extras innecesarios)
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+# copia el binario de uv desde su imagen oficial
+
+WORKDIR /app
+# todo lo siguiente corre desde /app
+
+COPY pyproject.toml uv.lock ./
+RUN uv sync --no-install-project --frozen
+# instala dependencias ANTES de copiar el código
+# ↑ esto es caching: si el código cambia pero no las deps,
+#   Docker reutiliza esta capa y no reinstala todo
+
+COPY . .
+RUN uv sync --frozen
+# ahora sí instala el proyecto completo
+
+COPY entrypoint.sh ./entrypoint.sh
+RUN chmod +x entrypoint.sh   # le da permiso de ejecución
+
+EXPOSE 8000
+CMD ["./entrypoint.sh"]</pre>
+      <p>Tu <code>docker-compose.yml</code>:</p>
+      <pre>services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"       # host:contenedor
+    volumes:
+      - ./database.db:/app/database.db   # persiste la DB en el host
+    env_file:
+      - .env               # carga SECRET_KEY y otras vars</pre>
+      <div class="warn">El volumen <code>./database.db</code> requiere que el archivo exista en el host antes de correr. Si no existe, Docker crea un directorio en su lugar y las cosas se rompen. Por eso el README dice <code>touch database.db</code>.</div>
+    </div>
+  </div>
+
+  <div class="study-block">
+    <div class="study-header" onclick="toggleStudy(this)">
+      <h3>Lógica de negocio — Roles y permisos</h3><span class="chevron">▼</span>
+    </div>
+    <div class="study-body">
+      <p>Tu sistema tiene dos roles definidos con un <code>StrEnum</code>:</p>
+      <pre>class UserRole(StrEnum):
+    ADMIN = "admin"
+    USER  = "user"</pre>
+      <p>Qué puede hacer cada rol:</p>
+      <ul>
+        <li><strong>USER:</strong> ver usuarios, crear items propios, eliminar sus propios items, ver sus propios items</li>
+        <li><strong>ADMIN:</strong> todo lo anterior + eliminar cualquier usuario (excepto a sí mismo)</li>
+      </ul>
+      <p>La lógica de acumulación de items en <code>POST /items/</code>: si ya tenés un "Mouse" con cantidad 2 y creás otro "Mouse" con cantidad 3, el resultado es un solo "Mouse" con cantidad 5. Esto es lógica de negocio propia — no viene de ningún tutorial.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== JS EXPLICADO ==================== -->
+<div id="js" class="section">
+  <h2>JavaScript del proyecto — explicado línea por línea</h2>
+
+  <div class="card">
+    <h3>Función 1: <code>loadItems()</code> — carga items y contador en paralelo</h3>
+    <p>Esta función hace dos requests a la API al mismo tiempo y actualiza la tabla de items y el contador. Muestra tres conceptos clave: <code>async/await</code>, <code>Promise.all</code> y template literals.</p>
+  </div>
+
+  <div class="code-annotated">
+    <table>
+      <tr><td class="code-line">async function loadItems() {</td><td class="code-note highlight">función asíncrona — puede usar await adentro</td></tr>
+      <tr><td class="code-line">  try {</td><td class="code-note">envuelve todo en try/catch para manejar errores de red</td></tr>
+      <tr><td class="code-line">    const [itemsRes, countRes] =</td><td class="code-note highlight">desestructuración de array — extrae los dos resultados en variables</td></tr>
+      <tr><td class="code-line">      await Promise.all([</td><td class="code-note highlight">Promise.all lanza los dos fetch <em>al mismo tiempo</em> y espera que ambos terminen. Más rápido que hacerlos uno tras otro.</td></tr>
+      <tr><td class="code-line">        fetch('/items/', { headers }),</td><td class="code-note">GET /items/ con el token JWT en el header</td></tr>
+      <tr><td class="code-line">        fetch(`/users/${window._myUserId}/items/count`, { headers }),</td><td class="code-note">template literal — inserta el id del usuario. _myUserId lo cargó loadMe() antes</td></tr>
+      <tr><td class="code-line">      ]);</td><td class="code-note"></td></tr>
+      <tr><td class="code-line">    const items = await itemsRes.json();</td><td class="code-note">parsea la respuesta como JSON → array de items</td></tr>
+      <tr><td class="code-line">    const countData = await countRes.json();</td><td class="code-note">parsea el contador → {"user_id": 1, "item_count": 5}</td></tr>
+      <tr><td class="code-line">    document.getElementById('items-list').innerHTML =</td><td class="code-note">reemplaza el contenido de la tabla en el HTML</td></tr>
+      <tr><td class="code-line">      items.map(i => `&lt;tr&gt;</td><td class="code-note highlight">.map() itera el array y genera HTML para cada item</td></tr>
+      <tr><td class="code-line">        &lt;td&gt;${i.id}&lt;/td&gt;</td><td class="code-note">interpolación de variables en el template literal</td></tr>
+      <tr><td class="code-line">        &lt;td&gt;${i.title}&lt;/td&gt;</td><td class="code-note"></td></tr>
+      <tr><td class="code-line">        &lt;td&gt;${i.cant}&lt;/td&gt;</td><td class="code-note"></td></tr>
+      <tr><td class="code-line">      &lt;/tr&gt;`).join('');</td><td class="code-note">.join('') une todos los strings del array en uno solo (sin comas)</td></tr>
+      <tr><td class="code-line">    document.getElementById('items-total').textContent =</td><td class="code-note">actualiza el texto del contador</td></tr>
+      <tr><td class="code-line">      `Total de items: ${countData.item_count ?? 0}`;</td><td class="code-note highlight">?? (nullish coalescing): si item_count es null o undefined, usa 0. No es lo mismo que || que también reemplaza el 0.</td></tr>
+      <tr><td class="code-line">  } catch(e) {</td><td class="code-note">captura errores de red o JSON inválido</td></tr>
+      <tr><td class="code-line">    console.error('Error cargando items:', e);</td><td class="code-note"></td></tr>
+      <tr><td class="code-line">  }</td><td class="code-note"></td></tr>
+      <tr><td class="code-line">}</td><td class="code-note"></td></tr>
+    </table>
+  </div>
+
+  <div class="card" style="margin-top:1.5rem">
+    <h3>Función 2: decode del JWT en el frontend</h3>
+    <p>Esta es la línea más interesante del JS — decodifica el payload del token sin hacer ningún request al servidor:</p>
+  </div>
+
+  <div class="code-annotated">
+    <table>
+      <tr><td class="code-line">const payload = JSON.parse(atob(token.split('.')[1]));</td><td class="code-note highlight">todo en una línea — se lee de adentro hacia afuera</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <p>Desglosado paso a paso con un token real:</p>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong><code>token.split('.')</code></strong> — divide el JWT por el punto<br>
+        <code>["eyJhbGciOiJIUzI1NiJ9", "eyJzdWIiOiJhZG1pbiIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTc0OX0", "firma"]</code>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong><code>[1]</code></strong> — toma solo el segundo elemento (el payload)<br>
+        <code>"eyJzdWIiOiJhZG1pbiIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTc0OX0"</code>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong><code>atob(...)</code></strong> — decodifica Base64 a string legible<br>
+        <code>'{"sub":"admin","role":"admin","exp":1749...}'</code>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong><code>JSON.parse(...)</code></strong> — convierte el string JSON en objeto JavaScript<br>
+        <code>{ sub: "admin", role: "admin", exp: 1749... }</code>
+      </div>
+    </div>
+
+    <div class="info">Esto funciona porque el payload de un JWT es solo Base64, no está encriptado. Por eso el frontend puede leer el username y el rol sin hacer un request extra al servidor.</div>
+
+    <p style="margin-top:0.75rem">Luego usás esos datos para:</p>
+    <pre>document.getElementById('username-display').textContent = payload.sub;
+// muestra el nombre del usuario logueado
+
+if (payload.role === 'admin') {
+    document.getElementById('admin-controls').style.display = 'block';
+    // muestra el panel de admin solo si el rol es admin
+}</pre>
+  </div>
+
+  <div class="card" style="margin-top:1rem">
+    <h3>Función 3: <code>loadMe().then(...)</code> — encadenamiento de promesas</h3>
+    <p>La última línea del JS es el punto de entrada que coordina todo:</p>
+    <div class="code-annotated" style="margin:0.75rem 0">
+      <table>
+        <tr><td class="code-line">loadMe().then(() => Promise.all([loadUsers(), loadItems()]));</td><td class="code-note highlight">loadMe primero, después ambas en paralelo</td></tr>
+      </table>
+    </div>
+    <div class="step"><div class="step-num">1</div><div class="step-body"><strong><code>loadMe()</code></strong> corre primero y guarda <code>window._myUserId</code>. Es necesario que termine antes porque <code>loadItems()</code> necesita ese id para hacer <code>/users/${_myUserId}/items/count</code>.</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><strong><code>.then(...)</code></strong> espera a que <code>loadMe()</code> resuelva antes de continuar.</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><strong><code>Promise.all([loadUsers(), loadItems()])</code></strong> lanza ambas en paralelo — no hay dependencia entre ellas, así que no tiene sentido esperar una para empezar la otra.</div></div>
+    <div class="tip">Esta es la respuesta a "¿por qué no simplemente <code>await loadMe(); await loadUsers(); await loadItems()</code>?" — porque así las últimas dos correrían secuencialmente y tardarían el doble.</div>
+  </div>
+</div>
+
+<!-- ==================== PREGUNTAS ==================== -->
+<div id="preguntas" class="section">
+  <h2>Preguntas de entrevista</h2>
+  <div class="filter-bar">
+    <button class="filter-btn active" onclick="filterQ('all', this)">Todas</button>
+    <button class="filter-btn" onclick="filterQ('fastapi', this)">FastAPI</button>
+    <button class="filter-btn" onclick="filterQ('jwt', this)">JWT</button>
+    <button class="filter-btn" onclick="filterQ('db', this)">Base de datos</button>
+    <button class="filter-btn" onclick="filterQ('test', this)">Testing</button>
+    <button class="filter-btn" onclick="filterQ('docker', this)">Docker</button>
+    <button class="filter-btn" onclick="filterQ('js', this)">JavaScript</button>
+    <button class="filter-btn" onclick="filterQ('diseno', this)">Diseño</button>
+  </div>
+
+  <!-- FastAPI -->
+  <div class="question" data-cat="fastapi">
+    <div class="question-header" onclick="toggleQ(this)">
+      <span class="question-text">¿Por qué elegiste FastAPI sobre Flask o Django?</span>
+      <div class="q-meta"><span class="question-cat">FastAPI</span><span class="q-chevron">▼</span></div>
+    </div>
+    <div class="answer"><p>FastAPI da validación automática con Pydantic, documentación Swagger sin configuración extra y soporte async nativo. Para una API REST es más directo que Django (que trae mucho overhead) y más moderno que Flask (sin tipado nativo). Además se integra naturalmente con SQLModel.</p></div>
+  </div>
+
+  <div class="question" data-cat="fastapi">
+    <div class="question-header" onclick="toggleQ(this)">
+      <span class="question-text">¿Qué hace <code>Depends()</code> en FastAPI?</span>
+      <div class="q-meta"><span class="question-cat">FastAPI</span><span class="q-chevron">▼</span></div>
+    </div>
+    <div class="answer"><p>Es el sistema de inyección de dependencias. Le decís a un endpoint que necesita algo y FastAPI lo resuelve antes de ejecutar la función. En mi proyecto lo uso para la sesión de DB (<code>get_session</code>) y para autenticación (<code>get_current_user</code>). Las dependencias se encadenan: <code>require_admin</code> llama internamente a <code>get_current_user</code>, que a su vez llama a <code>oauth2_scheme</code> y <code>get_session</code>.</p></div>
+  </div>
+
+  <div class="question" data-cat="fastapi">
+    <div class="question-header" onclick="toggleQ(this)">
+      <span class="question-text">¿Qué diferencia hay entre un schema y un modelo en tu proyecto?</span>
+      <div class="q-meta"><span class="question-cat">FastAPI</span><span class="q-chevron">▼</span></div>
+    </div>
+    <div class="answer"><p>El modelo (<code>models.py</code>, con <code>table=True</code>) es la tabla real en la DB. El schema (<code>schemas.py</code>) define qué datos entran y salen por la API. <code>UserCreate</code> recibe la password en texto plano; <code>UserRead</code> no la expone. Nunca devolvés el modelo directamente para evitar filtrar campos sensibles.</p></div>
+  </div>
+
+  <div class="question" data-cat="fastapi">
+    <div class="question-header" onclick="toggleQ(this)">
+      <span class="question-text">¿Qué pasa si mandás un tipo de dato incorrecto a un endpoint?</span>
+      <div class="q-meta"><span class="question-cat">FastAPI</span><span class="q-chevron">▼</span></div>
+    </div>
+    <div class="answer"><p>FastAPI devuelve automáticamente un <code>422 Unprocessable Entity</code> con el detalle del error de validación antes de que llegue a tu función. No necesitás validar tipos manualmente. Por ejemplo, si mandás <code>{"email": "no-es-email"}</code>, Pydantic lo rechaza porque definiste <code>email: EmailStr</code>.</p></div>
+  </div>
+
+  <div class="question" data-cat="fastapi">
+    <div class="question-header" onclick="toggleQ(this)">
+      <span class="question-text">¿Para qué sirve el <code>prefix</code> en los routers?</span>
+      <div class="q-meta"><span class="question-cat">FastAPI</span><span class="q-chevron">▼</span></div>
+    </div>
+    <div class="answer"><p>Para no repetir el prefijo en cada ruta. Con <code>APIRouter(prefix="/users")</code>, todas las rutas del router automáticamente empiezan con <code>/users</code>. El <code>tags</code> agrupa los endpoints en la documentación Swagger.</p></div>
+  </div>
+
+  <!-- JWT -->
+  <div class="question" data-cat="jwt">
+    <div class="question-header" onclick="toggleQ(this)">
+      <span class="question-text">Explicá el flujo completo de autenticación JWT en tu proyecto</span>
+      <div class="q-meta"><span class="question-cat">JWT</span><span class="q-chevron">▼</span></div>
+    </div>
+    <div class="answer">
+      <p>1. <code>POST /login</code> con username y password.<br>2. <code>authenticate_user</code> busca el usuario en la DB y verifica la password con <code>verify_password</code>.<br>3. Si es válida, <code>create_access_token</code> genera un JWT firmado con la <code>SECRET_KEY</code>, expira en 30 min.<br>4. El cliente guarda el token en <code>localStorage</code> y lo manda en <code>Authorization: Bearer &lt;token&gt;</code>.<br>5. <code>get_current_user</code> decodifica el JWT, extrae el username (<code>sub</code>) y busca al usuario en la DB.</p>
+      <div class="warn">El JWT no se guarda en la DB — es stateless. No se puede invalidar sin blacklist o cambiar la SECRET_KEY.</div>
+    </div>
+  </div>
+
+  <div class="question" data-cat="jwt">
+    <div class="question-header" onclick="toggleQ(this)">
+      <span class="question-text">¿Qué pasa si alguien roba el token JWT?</span>
+      <div class="q-meta"><span class="question-cat">JWT</span><span class="q-chevron">▼</span></div>
+    </div>
+    <div class="answer"><p>Puede usarlo hasta que expire (30 min en mi proyecto). Para mitigarlo en producción: tokens de muy corta vida + refresh tokens, HTTPS siempre, no guardar el token en localStorage si se teme XSS (usar httpOnly cookies). Esto quedó como mejora pendiente.</p></div>
+  </div>
+
+  <div class="question" data-cat="jwt">
+    <div class="question-header" onclick="toggleQ(this)">
+      <span class="question-text">¿Por qué el payload del JWT no está encriptado?</span>
+      <div class="q-meta"><span class="question-cat">JWT</span><span class="q-chevron">▼</span></div>
+    </div>
+    <div class="answer"><p>Un JWT estándar solo firma el payload (garantiza que no fue modificado), pero no lo encripta (oculta el contenido). Cualquiera puede decodificar el Base64 y ver los datos. Por eso solo guardo username y role — nada sensible. Para encriptar el payload existe JWE, pero no es necesario para este caso de uso.</p></div>
+  </div>
+
+  <!-- DB -->
+  <div class="question" data-cat="db">
+    <div class="question-header" onclick="toggleQ(this)">
+      <span class="question-text">¿Qué es SQLModel y por qué lo usaste?</span>
+      <div class="q-meta"><span class="question-cat">Base de datos</span><span class="q-chevron">▼</span></div>
+    </div>
+    <div class="answer"><p>SQLModel combina SQLAlchemy (ORM para la DB) con Pydantic (validación). Permite definir un modelo una sola vez y usarlo como tabla de DB y como esquema de validación. Lo elegí porque se integra naturalmente con FastAPI, que ya usa Pydantic internamente.</p></div>
+  </div>
+
+  <div class="question" data-cat="db">
+    <div class="question-header" onclick="toggleQ(this)">
+      <span class="question-text">¿Para qué sirve Alembic? ¿Por qué no usar <code>create_all</code>?</span>
+      <div class="q-meta"><span class="question-cat">Base de datos</span><span class="q-chevron">▼</span></div>
+    </div>
+    <div class="answer"><p><code>create_all</code> solo crea tablas que no existen. Si necesitás agregar una columna a una tabla con datos, no hace nada. Alembic genera scripts de migración incrementales que podés aplicar y revertir, esencial en producción donde no podés borrar y recrear la DB.</p></div>
+  </div>
+
+  <div class="question" data-cat="db">
+    <div class="question-header" onclick="toggleQ(this)">
+      <span class="question-text">¿Qué hace <code>model_dump(exclude_unset=True)</code> en el PATCH?</span>
+      <div class="q-meta"><span class="question-cat">Base de datos</span><span class="q-chevron">▼</span></div>
+    </div>
+    <div class="answer"><p>En un PATCH, solo querés actualizar los campos que el cliente mandó. <code>exclude_unset=True</code> devuelve solo los campos que fueron explícitamente enviados, no todos los del schema. Así si mandás solo <code>{"full_name": "Nuevo"}</code>, no sobreescribís el email ni el username.</p></div>
+  </div>
+
+  <div class="question" data-cat="db">
+    <div class="question-header" onclick="toggleQ(this)">
+      <span class="question-text">¿Qué hace la lógica de negocio del endpoint POST /items/?</span>
+      <div class="q-meta"><span class="question-cat">Base de datos</span><span class="q-chevron">▼</span></div>
+    </div>
+    <div class="answer"><p>Si el usuario ya tiene un item con el mismo título, suma la cantidad en vez de crear uno nuevo. Es una lógica de acumulación: dos "Mouse" con cantidad 2 y 3 resultan en un solo "Mouse" con cantidad 5. Si el título es nuevo, crea el item normalmente.</p></div>
+  </div>
+
+  <!-- Testing -->
+  <div class="question" data-cat="test">
+    <div class="question-header" onclick="toggleQ(this)">
+      <span class="question-text">¿Por qué los tests usan una DB en memoria?</span>
+      <div class="q-meta"><span class="question-cat">Testing</span><span class="q-chevron">▼</span></div>
+    </div>
+    <div class="answer"><p>Para que sean aislados y rápidos. Con <code>sqlite://</code> (sin path de archivo) la DB vive en RAM y desaparece al terminar el test. Si usara la DB real, los tests podrían interferir entre sí o dejar datos sucios que rompan tests posteriores.</p></div>
+  </div>
+
+  <div class="question" data-cat="test">
+    <div class="question-header" onclick="toggleQ(this)">
+      <span class="question-text">¿Qué hace <code>app.dependency_overrides</code>?</span>
+      <div class="q-meta"><span class="question-cat">Testing</span><span class="q-chevron">▼</span></div>
+    </div>
+    <div class="answer"><p>Reemplaza una dependencia de FastAPI con otra durante los tests. Reemplazo <code>get_session</code> (DB real) con una función que devuelve la sesión en memoria. Los endpoints se prueban en condiciones reales pero contra datos de test.</p></div>
+  </div>
+
+  <div class="question" data-cat="test">
+    <div class="question-header" onclick="toggleQ(this)">
+      <span class="question-text">¿Qué es un fixture en pytest y para qué sirve <code>yield</code>?</span>
+      <div class="q-meta"><span class="question-cat">Testing</span><span class="q-chevron">▼</span></div>
+    </div>
+    <div class="answer"><p>Un fixture es una función que provee recursos para los tests (setup). El <code>yield</code> divide el fixture en dos partes: lo de antes del <code>yield</code> es el setup (crear la DB), lo de después es el teardown (borrar la DB). Esto garantiza que aunque el test falle, el cleanup siempre corre.</p></div>
+  </div>
+
+  <!-- Docker -->
+  <div class="question" data-cat="docker">
+    <div class="question-header" onclick="toggleQ(this)">
+      <span class="question-text">¿Qué hace el entrypoint.sh y por qué existe?</span>
+      <div class="q-meta"><span class="question-cat">Docker</span><span class="q-chevron">▼</span></div>
+    </div>
+    <div class="answer">
+      <p>Corre en orden: 1) migraciones de Alembic, 2) seed de usuarios de prueba, 3) levanta uvicorn. Existe para que <code>docker compose up</code> deje el proyecto listo sin pasos manuales. El orden importa: las migraciones tienen que correr antes que la app.</p>
+      <div class="warn">Punto de conflicto: el seed corre en cada restart. Está protegido con <code>if not exists</code>, pero en producción real no debería estar en el entrypoint.</div>
+    </div>
+  </div>
+
+  <div class="question" data-cat="docker">
+    <div class="question-header" onclick="toggleQ(this)">
+      <span class="question-text">¿Por qué hay dos <code>RUN uv sync</code> en el Dockerfile?</span>
+      <div class="q-meta"><span class="question-cat">Docker</span><span class="q-chevron">▼</span></div>
+    </div>
+    <div class="answer"><p>Es una optimización de caché de capas. Docker cachea cada instrucción. Si copiás <code>pyproject.toml</code> e instalás las dependencias antes de copiar el código fuente, Docker reutiliza esa capa aunque el código cambie. Sin esto, cada cambio en el código reinstalaría todas las dependencias.</p></div>
+  </div>
+
+  <div class="question" data-cat="docker">
+    <div class="question-header" onclick="toggleQ(this)">
+      <span class="question-text">¿Por qué se monta <code>database.db</code> como volumen?</span>
+      <div class="q-meta"><span class="question-cat">Docker</span><span class="q-chevron">▼</span></div>
+    </div>
+    <div class="answer"><p>Sin el volumen, al hacer <code>docker compose down</code> los datos desaparecen porque el contenedor es efímero. El volumen persiste el archivo SQLite en el host. Limitación: SQLite con volúmenes solo puede ser accedido por un contenedor a la vez.</p></div>
+  </div>
+
+  <!-- JavaScript -->
+  <div class="question" data-cat="js">
+    <div class="question-header" onclick="toggleQ(this)">
+      <span class="question-text">¿Por qué usás <code>Promise.all</code> en <code>loadItems()</code>?</span>
+      <div class="q-meta"><span class="question-cat">JavaScript</span><span class="q-chevron">▼</span></div>
+    </div>
+    <div class="answer"><p><code>Promise.all</code> lanza ambos fetch al mismo tiempo y espera que terminen los dos. Si los hiciera secuenciales con dos <code>await</code>, el segundo esperaría que termine el primero sin necesidad — tardaría el doble. Los uso juntos porque no hay dependencia entre los dos requests.</p></div>
+  </div>
+
+  <div class="question" data-cat="js">
+    <div class="question-header" onclick="toggleQ(this)">
+      <span class="question-text">¿Qué hace <code>JSON.parse(atob(token.split('.')[1]))</code>?</span>
+      <div class="q-meta"><span class="question-cat">JavaScript</span><span class="q-chevron">▼</span></div>
+    </div>
+    <div class="answer"><p>Decodifica el payload del JWT sin hacer ningún request. El JWT tiene tres partes separadas por puntos; la segunda (índice 1) es el payload en Base64. <code>atob()</code> decodifica el Base64 a string JSON y <code>JSON.parse()</code> lo convierte en objeto. Funciona porque el payload de un JWT estándar no está encriptado, solo firmado.</p></div>
+  </div>
+
+  <div class="question" data-cat="js">
+    <div class="question-header" onclick="toggleQ(this)">
+      <span class="question-text">¿Por qué <code>loadMe()</code> corre antes que <code>loadUsers()</code> y <code>loadItems()</code>?</span>
+      <div class="q-meta"><span class="question-cat">JavaScript</span><span class="q-chevron">▼</span></div>
+    </div>
+    <div class="answer"><p><code>loadMe()</code> guarda el id del usuario en <code>window._myUserId</code>. <code>loadItems()</code> necesita ese id para hacer <code>/users/{id}/items/count</code>. Si corrieran en paralelo, <code>_myUserId</code> podría no estar disponible cuando <code>loadItems()</code> lo necesite. Con <code>.then()</code> me aseguro de que <code>loadMe</code> termine primero.</p></div>
+  </div>
+
+  <!-- Diseño -->
+  <div class="question" data-cat="diseno">
+    <div class="question-header" onclick="toggleQ(this)">
+      <span class="question-text">¿Qué mejorarías si tuvieras más tiempo?</span>
+      <div class="q-meta"><span class="question-cat">Diseño</span><span class="q-chevron">▼</span></div>
+    </div>
+    <div class="answer">
+      <p>Tres cosas concretas: 1) Migrar a PostgreSQL en docker-compose — más robusto que SQLite para producción. 2) Agregar autenticación al PATCH de usuarios — actualmente cualquiera puede editar a cualquier usuario, es un bug de seguridad. 3) Refresh tokens para no obligar al usuario a loguearse cada 30 minutos.</p>
+      <div class="tip">Esta respuesta muestra autocrítica real. Mucho mejor que decir "me quedó todo perfecto".</div>
+    </div>
+  </div>
+
+  <div class="question" data-cat="diseno">
+    <div class="question-header" onclick="toggleQ(this)">
+      <span class="question-text">¿Por qué separaste <code>services.py</code> de los routers?</span>
+      <div class="q-meta"><span class="question-cat">Diseño</span><span class="q-chevron">▼</span></div>
+    </div>
+    <div class="answer"><p>Para separar la lógica de negocio del transporte HTTP. Los routers manejan requests y responses; los services contienen lógica que podría reutilizarse desde un CLI o un test sin pasar por HTTP. En un sistema más grande es fundamental para no mezclar responsabilidades.</p></div>
+  </div>
+
+  <div class="question" data-cat="diseno">
+    <div class="question-header" onclick="toggleQ(this)">
+      <span class="question-text">¿Por qué el seed no falla si ya existen los usuarios?</span>
+      <div class="q-meta"><span class="question-cat">Diseño</span><span class="q-chevron">▼</span></div>
+    </div>
+    <div class="answer"><p>Antes de insertar cada usuario, consulto si ya existe con <code>session.exec(select(User).where(User.username == u.username)).first()</code>. Si existe, no hace nada. Esto permite que el seed corra múltiples veces (como en cada restart de Docker) sin duplicar datos ni tirar errores.</p></div>
+  </div>
+
+  <div class="question" data-cat="diseno">
+    <div class="question-header" onclick="toggleQ(this)">
+      <span class="question-text">¿Qué es una cooperativa de trabajo y cómo te ves trabajando ahí?</span>
+      <div class="q-meta"><span class="question-cat">Diseño</span><span class="q-chevron">▼</span></div>
+    </div>
+    <div class="answer"><p>En una cooperativa los miembros son parte de la organización — hay más horizontalidad y decisiones colectivas. Mencionar que valorás el trabajo colaborativo, la transparencia y que podés adaptar tu forma de trabajar a un contexto donde las decisiones no son top-down. Es bueno mostrar interés genuino en el modelo cooperativo, no solo en el trabajo técnico.</p></div>
+  </div>
+</div>
+
+<!-- ==================== PUNTOS CLAVE ==================== -->
+<div id="puntos" class="section">
+  <h2>Puntos clave del challenge</h2>
+  <div class="key-grid">
+    <div class="key-card"><div class="key-icon">✅</div><div class="key-title">Requisito base — cumplido</div><div class="key-desc">Endpoint de lectura (<code>GET /items/</code>, <code>GET /users/</code>) y de escritura (<code>POST /items/</code>, <code>POST /users/</code>). Tests para ambos.</div></div>
+    <div class="key-card"><div class="key-icon">🐳</div><div class="key-title">Docker — punto extra</div><div class="key-desc"><code>docker compose up</code> levanta todo: migraciones, seed y servidor. Volumen para persistir la DB.</div></div>
+    <div class="key-card"><div class="key-icon">🎨</div><div class="key-title">HTML/CSS/JS — puntos extra</div><div class="key-desc">Frontend con login, registro y dashboard. JS maneja el token JWT, fetch a la API y renderizado dinámico.</div></div>
+    <div class="key-card"><div class="key-icon">🔐</div><div class="key-title">Lógica de negocio — punto extra</div><div class="key-desc">Roles admin/user, permisos diferenciados, acumulación de items, validación de unicidad en username y email.</div></div>
+    <div class="key-card"><div class="key-icon">📄</div><div class="key-title">README completo — punto extra</div><div class="key-desc">Setup, usuarios de prueba, endpoints, diagrama ER, descripción personal en tus palabras.</div></div>
+    <div class="key-card"><div class="key-icon">⚠️</div><div class="key-title">Bug conocido — mencionarlo</div><div class="key-desc"><code>PATCH /users/{id}</code> no tiene autenticación. Mencionarlo activamente en la entrevista muestra criterio técnico y honestidad.</div></div>
+  </div>
+
+  <div class="card" style="margin-top:1.5rem">
+    <h3>Lo que pedían vs. lo que hiciste</h3>
+    <ul class="topic-list">
+      <li>Login funcional → JWT con <code>POST /login</code> + frontend</li>
+      <li>Endpoint de lectura → <code>GET /items/</code>, <code>GET /users/</code>, <code>GET /users/{id}</code>, <code>GET /users/{id}/items/count</code></li>
+      <li>Endpoint de escritura → <code>POST /items/</code>, <code>POST /users/</code>, <code>DELETE /users/{id}</code>, <code>PATCH /users/{id}</code></li>
+      <li>Al menos un test por endpoint → múltiples tests incluyendo casos de error y permisos</li>
+      <li>Base de datos relacional → SQLite con relación User → Item (FK)</li>
+      <li>README con descripción personal → incluido con diagrama ER</li>
+      <li>Docker → punto extra completado</li>
+      <li>HTML/CSS/JS en el Home → punto extra completado</li>
+      <li>Lógica de negocio → roles, permisos, acumulación de items</li>
+    </ul>
+  </div>
+</div>
+
+</main>
+
+<script>
+function showSection(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function toggleQ(header) {
+  header.parentElement.classList.toggle('open');
+}
+
+function toggleStudy(header) {
+  header.parentElement.classList.toggle('open');
+}
+
+function filterQ(cat, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.question').forEach(q => {
+    q.style.display = (cat === 'all' || q.dataset.cat === cat) ? '' : 'none';
+  });
+}
+
+const DAYS_KEY = 'interview_days_v2';
+function toggleDay(n) {
+  const done = JSON.parse(localStorage.getItem(DAYS_KEY) || '[]');
+  const idx = done.indexOf(n);
+  if (idx === -1) done.push(n); else done.splice(idx, 1);
+  localStorage.setItem(DAYS_KEY, JSON.stringify(done));
+  renderDays(done);
+}
+function renderDays(done) {
+  for (let i = 1; i <= 5; i++) {
+    const el = document.getElementById('d' + i);
+    if (done.includes(i)) el.classList.add('done');
+    else el.classList.remove('done');
+  }
+  document.getElementById('progressFill').style.width = (done.length / 5 * 100) + '%';
+}
+renderDays(JSON.parse(localStorage.getItem(DAYS_KEY) || '[]'));
+</script>
+</body>
+</html>

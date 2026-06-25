@@ -1,16 +1,19 @@
-# FastAPI Technical Challenge
+# Task Manager API
 
-REST API desarrollada con FastAPI que implementa autenticación JWT, roles de usuario, CRUD de usuarios e items, frontend básico con HTML/CSS/JS y soporte para Docker.
+REST API de gestión de tareas desarrollada con FastAPI. Implementa autenticación JWT con refresh tokens, roles de usuario, CRUD completo de tareas con filtros y ordenamiento, categorías, estadísticas, notificaciones en tiempo real vía WebSocket, rate limiting, logging estructurado, migraciones con Alembic y soporte Docker.
 
 ---
 
 ## Tecnologías
 
-- **FastAPI** — framework web
-- **SQLModel** — ORM + validación
+- **FastAPI** — framework web async
+- **SQLModel** — ORM + validación con Pydantic
 - **SQLite** — base de datos
 - **Alembic** — migraciones
-- **JWT** — autenticación
+- **JWT** — autenticación (access + refresh tokens)
+- **WebSockets** — notificaciones en tiempo real
+- **slowapi** — rate limiting
+- **pydantic-settings** — configuración por entorno
 - **Docker / Docker Compose** — contenedores
 - **Pytest** — tests
 
@@ -19,8 +22,6 @@ REST API desarrollada con FastAPI que implementa autenticación JWT, roles de us
 ## Cómo levantar el proyecto
 
 ### Con Docker (recomendado)
-
-Requisitos: tener Docker y Docker Compose instalados.
 
 ```bash
 # 1. Clonar el repositorio
@@ -36,7 +37,7 @@ docker compose up --build
 
 Al iniciar, Docker automáticamente:
 - corre las migraciones de Alembic
-- crea los usuarios de prueba predefinidos
+- crea los usuarios, categorías y tareas de prueba
 - levanta el servidor en el puerto 8000
 
 La API queda disponible en: `http://localhost:8000`
@@ -54,7 +55,7 @@ uv sync
 # 2. Correr migraciones
 uv run alembic upgrade head
 
-# 3. Crear usuarios de prueba
+# 3. Crear datos de prueba
 uv run python seed.py
 
 # 4. Levantar el servidor
@@ -65,33 +66,38 @@ La API queda disponible en: `http://localhost:8000`
 
 ---
 
-## Cómo ejecutar los tests
+### Variables de entorno
 
-```bash
-# Con uv
-uv run pytest
+El proyecto usa **pydantic-settings** para la configuración. Podés crear un archivo `.env` en la raíz para sobrescribir los defaults:
 
-# Con pytest directamente (si está en el PATH)
-pytest
-```
-
-Para ver más detalle en la salida:
-
-```bash
-uv run pytest -v
+```env
+SECRET_KEY=tu-clave-secreta
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+REFRESH_TOKEN_EXPIRE_DAYS=7
+DATABASE_URL=sqlite:///database.db
 ```
 
 ---
 
-## Usuarios de prueba predefinidos
+## Cómo ejecutar los tests
 
-Al levantar el proyecto con Docker (o correr `seed.py` localmente), se crean automáticamente estos usuarios:
+```bash
+uv run pytest        # básico
+uv run pytest -v     # con detalle
+```
+
+---
+
+## Datos de prueba predefinidos
 
 | Username | Password | Rol   |
 |----------|----------|-------|
 | `admin`  | `admin`  | Admin |
 | `user`   | `user`   | User  |
 | `user2`  | `user2`  | User  |
+
+El usuario `user` incluye 3 categorías (Trabajo, Personal, Estudio) y 7 tareas de ejemplo.
 
 ---
 
@@ -101,57 +107,36 @@ Al levantar el proyecto con Docker (o correr `seed.py` localmente), se crean aut
 
 1. Abrí `http://localhost:8000`
 2. Ingresá username y password
-3. Al autenticarte correctamente, serás redirigido al dashboard en `/home`
-
----
+3. Al autenticarte, serás redirigido al dashboard en `/home`
 
 ### Opción 2 — Swagger UI
 
 1. Abrí `http://localhost:8000/docs`
-2. Buscá el endpoint `POST /login`
-3. Hacé click en **Try it out**
-4. Completá el formulario:
-
-```
-username: admin
-password: admin
-```
-
-5. Ejecutá y copiá el `access_token` de la respuesta
-6. Hacé click en el botón **Authorize** (arriba a la derecha)
-7. Pegá el token con el formato: `Bearer <token>`
-
----
+2. Ejecutá `POST /login` con `username: user` / `password: user`
+3. Copiá el `access_token` y hacé click en **Authorize** → `Bearer <token>`
 
 ### Opción 3 — curl
 
 ```bash
 curl -X POST http://localhost:8000/login \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=admin&password=admin"
+  -d "username=user&password=user"
 ```
 
-Respuesta esperada:
-
+Respuesta:
 ```json
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "access_token": "eyJ...",
+  "refresh_token": "eyJ...",
   "token_type": "bearer"
 }
 ```
 
-Para usar el token en requests posteriores:
-
+Para renovar el access token sin volver a loguearse:
 ```bash
-# Ejemplo: listar usuarios
-curl http://localhost:8000/users/ \
-  -H "Authorization: Bearer <access_token>"
-
-# Ejemplo: crear un item
-curl -X POST http://localhost:8000/items/ \
-  -H "Authorization: Bearer <access_token>" \
+curl -X POST http://localhost:8000/refresh \
   -H "Content-Type: application/json" \
-  -d '{"title": "Notebook", "cant": 2, "description": "Lenovo ThinkPad"}'
+  -d '{"refresh_token": "<refresh_token>"}'
 ```
 
 ---
@@ -160,35 +145,115 @@ curl -X POST http://localhost:8000/items/ \
 
 ### Auth
 
-| Método | Endpoint | Descripción | Auth requerida |
-|--------|----------|-------------|----------------|
-| POST | `/login` | Login, devuelve JWT | No |
+| Método | Endpoint | Descripción | Rate limit |
+|--------|----------|-------------|------------|
+| POST | `/login` | Login → access + refresh token | 10/min por IP |
+| POST | `/refresh` | Renueva tokens con el refresh token | 10/min por IP |
 
 ### Usuarios
 
-| Método | Endpoint | Descripción | Auth requerida |
-|--------|----------|-------------|----------------|
+| Método | Endpoint | Descripción | Auth |
+|--------|----------|-------------|------|
 | POST | `/users/` | Crear usuario | No |
 | GET | `/users/` | Listar usuarios | Sí |
+| GET | `/users/me` | Usuario autenticado | Sí |
 | GET | `/users/{id}` | Obtener usuario | Sí |
 | PATCH | `/users/{id}` | Actualizar usuario | Sí |
 | DELETE | `/users/{id}` | Eliminar usuario | Solo Admin |
 
-### Items
+### Tareas
 
-| Método | Endpoint | Descripción | Auth requerida |
-|--------|----------|-------------|----------------|
-| POST | `/items/` | Crear item | Sí |
-| GET | `/items/` | Listar items propios | Sí |
-| DELETE | `/items/{id}` | Eliminar item propio | Sí |
+| Método | Endpoint | Descripción | Auth |
+|--------|----------|-------------|------|
+| POST | `/tasks/` | Crear tarea | Sí |
+| GET | `/tasks/` | Listar con filtros | Sí |
+| GET | `/tasks/stats` | Estadísticas por estado | Sí |
+| GET | `/tasks/{id}` | Obtener tarea | Sí |
+| PATCH | `/tasks/{id}` | Actualizar tarea | Sí |
+| DELETE | `/tasks/{id}` | Eliminar tarea | Sí |
+
+#### Filtros disponibles en `GET /tasks/`
+
+| Parámetro | Tipo | Descripción |
+|-----------|------|-------------|
+| `status` | `pending` \| `in_progress` \| `done` | Filtrar por estado |
+| `priority` | `low` \| `medium` \| `high` | Filtrar por prioridad |
+| `category_id` | int | Filtrar por categoría |
+| `search` | string | Búsqueda parcial en el título |
+| `sort_by` | `created_at` \| `due_date` \| `priority` | Campo de ordenamiento |
+| `order` | `asc` \| `desc` | Dirección |
+| `offset` / `limit` | int | Paginación (máx 100) |
+
+### Categorías
+
+| Método | Endpoint | Descripción | Auth |
+|--------|----------|-------------|------|
+| POST | `/categories/` | Crear categoría | Sí |
+| GET | `/categories/` | Listar propias | Sí |
+| DELETE | `/categories/{id}` | Eliminar (desasocia tareas) | Sí |
+
+### WebSocket
+
+| Endpoint | Descripción |
+|----------|-------------|
+| `WS /ws?token=<jwt>` | Notificaciones en tiempo real |
+
+Al conectarse, el cliente recibe eventos JSON cuando cualquier usuario crea, actualiza o elimina una tarea:
+
+```json
+{
+  "event": "task_updated",
+  "task_id": 3,
+  "title": "Revisar PRs pendientes",
+  "status": "done",
+  "username": "user",
+  "timestamp": "2026-06-25T12:00:00+00:00"
+}
+```
+
+### Health check
+
+| Método | Endpoint |
+|--------|----------|
+| GET | `/health` |
 
 ---
 
 ## Roles
 
-**USER** puede: ver usuarios, crear items, eliminar sus propios items.
+**USER** puede: ver usuarios, gestionar sus propias tareas y categorías.
 
 **ADMIN** puede todo lo anterior más: eliminar cualquier usuario (excepto a sí mismo).
+
+---
+
+## Características técnicas
+
+### Autenticación JWT dual
+
+El login devuelve dos tokens: un **access token** (30 min) para autenticar requests, y un **refresh token** (7 días) para renovarlo sin volver a ingresar las credenciales. Ambos tokens incluyen un campo `type` en el payload para prevenir que uno sea usado en lugar del otro.
+
+### Rate limiting
+
+Los endpoints de auth (`/login`, `/refresh`) tienen un límite de **10 requests por minuto por IP** para mitigar ataques de fuerza bruta. El resto de la API tiene un límite global de 200/min. Implementado con `slowapi` sobre el backend de `limits`.
+
+### Logging de requests
+
+Un middleware registra cada request con método, ruta, status code y tiempo de respuesta:
+
+```
+10:30:01  INFO     POST /login  →  200  (45.2 ms)
+10:30:02  INFO     GET  /tasks/ →  200  (12.8 ms)
+10:30:03  INFO     WS connect: user  (total: 1)
+```
+
+### Pydantic Settings
+
+Toda la configuración (claves, tiempos de expiración, URL de DB) está centralizada en `config.py` con validación automática. Soporta `.env` y variables de entorno del sistema.
+
+### WebSockets en tiempo real
+
+Cada cliente conectado al endpoint `/ws` recibe broadcasts cuando cualquier usuario modifica tareas. La conexión se autentica con el JWT vía query param. El frontend reconecta automáticamente con backoff exponencial si se pierde la conexión.
 
 ---
 
@@ -199,20 +264,24 @@ fast-API/
 │
 ├── alembic/               # Migraciones de base de datos
 ├── routers/
-│   ├── auth.py            # Endpoint de login
+│   ├── auth.py            # Login + refresh token
 │   ├── users.py           # CRUD de usuarios
-│   └── items.py           # CRUD de items
-├── static/                # CSS
+│   ├── tasks.py           # CRUD de tareas + filtros + stats
+│   └── categories.py      # CRUD de categorías
+├── static/                # CSS + JS del frontend
 ├── templates/             # HTML (login, home, register)
 ├── test/                  # Tests con Pytest
 │
-├── main.py                # App principal, rutas de frontend
-├── models.py              # Modelos SQLModel (User, Item)
+├── main.py                # App, middleware de logging, WebSocket, health
+├── config.py              # Pydantic Settings (configuración centralizada)
+├── limiter.py             # Instancia compartida del rate limiter
+├── ws.py                  # ConnectionManager para WebSockets
+├── models.py              # Modelos SQLModel (User, Category, Task)
 ├── schemas.py             # Schemas de entrada/salida
-├── security.py            # JWT, hashing, dependencias de auth
+├── security.py            # JWT (access + refresh), hashing, dependencias
 ├── services.py            # Lógica de negocio
 ├── db.py                  # Configuración de base de datos
-├── seed.py                # Script de usuarios de prueba
+├── seed.py                # Script de datos de prueba
 ├── entrypoint.sh          # Script de inicio para Docker
 │
 ├── Dockerfile
@@ -222,9 +291,7 @@ fast-API/
 
 ---
 
-
-
-# Database Diagram
+## Database Diagram
 
 ```mermaid
 erDiagram
@@ -238,35 +305,50 @@ erDiagram
         string role
     }
 
-    ITEM {
+    CATEGORY {
         int id PK
-        string title
-        string description
-        int cant
+        string name
+        string color
         int owner_id FK
     }
 
-    USER ||--o{ ITEM : owns
+    TASK {
+        int id PK
+        string title
+        string description
+        string status
+        string priority
+        date due_date
+        datetime created_at
+        int category_id FK
+        int owner_id FK
+    }
+
+    USER ||--o{ CATEGORY : owns
+    USER ||--o{ TASK : owns
+    CATEGORY ||--o{ TASK : groups
 ```
 
 ---
 
-
 ## Descripción personal del proyecto
 
-Arranqué definiendo los modelos de datos: dos entidades, `User` e `Item`, con una relación de uno a muchos. Cada usuario puede tener muchos items, y cada item pertenece a un único usuario.
+El proyecto empezó como un challenge técnico de entrevista y lo expandí para explorar un conjunto más amplio de patrones de FastAPI en producción.
 
-Para la autenticación implementé JWT: al hacer login se genera un token firmado con una clave secreta, y ese token se valida en cada request protegido mediante una dependencia de FastAPI. Agregué un sistema de roles (USER / ADMIN) para la lógica de negocio: solo el admin puede eliminar usuarios, y cada usuario solo puede ver y eliminar sus propios items.
+**Dominio:** tres entidades (`User`, `Category`, `Task`) con relaciones de uno a muchos. Las tareas tienen estado (`pending`, `in_progress`, `done`), prioridad, fecha de vencimiento y estadísticas de tareas vencidas.
 
-La DB es SQLite gestionada con SQLModel  y Alembic para migraciones. Elegí SQLite porque esta integrada con python y SQLModel porque es del mismos creador que fastapi,como es en un solo archiva facilita levantarlo localmente o con Docker.
+**Autenticación:** el login devuelve un access token (JWT de corta duración) y un refresh token (larga duración). El frontend renueva el access token de forma transparente cuando expira, sin redirigir al usuario al login. Los tokens llevan un campo `type` en el payload para prevenir sustitución cruzada.
 
-El frontend es minimalista — tres páginas HTML con CSS y algo de JS para manejar el login, el registro y el dashboard.
+**Rate limiting:** los endpoints de auth tienen un límite de 10 requests/minuto por IP con `slowapi`. En los tests, el limiter se desactiva por fixture para evitar falsos positivos.
 
-Para Docker armé un `Dockerfile` con `uv` como gestor de dependencias y un `entrypoint.sh` que corre las migraciones y el seed automáticamente antes de levantar el servidor, para que el proyecto funcione con un solo `docker compose up`.
+**Logging:** un middleware de request logging registra cada operación con método, ruta, status code y tiempo de respuesta. Las conexiones WebSocket también se loguean con el conteo de clientes activos.
 
-Los tests cubren los flujos principales de usuarios e items con un cliente de test de FastAPI y una base de datos SQLite en memoria para no tocar la de desarrollo.
+**Configuración:** toda la configuración sensible vive en `config.py` con `pydantic-settings`, que valida y carga desde variables de entorno o archivo `.env`.
+
+**WebSockets:** cada mutación de tarea hace broadcast a todos los clientes conectados. El frontend muestra toasts de notificación cuando la acción fue de otro usuario, y refresca stats y lista automáticamente.
+
+**Tests:** 31 tests cubren CRUD, filtros, autorización, stats y categorías. El rate limiter y la DB se aíslan por fixture para que los tests sean deterministas.
 
 ## Autor
 
 Matías Indaco
-

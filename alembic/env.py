@@ -7,11 +7,16 @@ from alembic import context
 
 from sqlmodel import SQLModel
 
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from config import settings
 
 config = context.config
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+config.set_main_option("sqlalchemy.url", settings.database_url)
 
 target_metadata = SQLModel.metadata
 

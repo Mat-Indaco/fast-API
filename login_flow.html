@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login Flow — Debug completo</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #f5f4f0; color: #1a1a18; }
+
+header { background: #26215C; color: #EEEDFE; padding: 1.75rem 2rem 1.5rem; }
+header h1 { font-size: 1.4rem; font-weight: 500; }
+header p { font-size: 0.85rem; color: #AFA9EC; margin-top: 0.2rem; }
+
+main { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+/* ---- DIAGRAM ---- */
+.diagram-scroll { overflow-x: auto; margin-bottom: 2rem; }
+.diagram { min-width: 820px; }
+
+.layers { display: grid; grid-template-columns: 130px 1fr 130px; gap: 0; }
+.layer-label { font-size: 0.72rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: #888780; padding: 0.5rem 0.75rem; background: #fff; border: 0.5px solid #d3d1c7; border-radius: 8px 8px 0 0; text-align: center; }
+.layer-body { border-left: 0.5px solid #d3d1c7; border-right: 0.5px solid #d3d1c7; min-height: 20px; }
+
+.flow { display: flex; flex-direction: column; gap: 0; }
+
+.flow-row { display: grid; grid-template-columns: 130px 1fr 130px; align-items: center; min-height: 52px; }
+.flow-row.server-row { grid-template-columns: 130px 1fr 130px; }
+
+.lane { border-left: 0.5px dashed #d3d1c7; border-right: 0.5px dashed #d3d1c7; height: 100%; display: flex; align-items: center; justify-content: center; padding: 6px 0; }
+.lane-l { border-left: none; }
+.lane-r { border-right: none; }
+
+.node {
+  display: flex; align-items: center; gap: 8px;
+  background: #fff; border: 0.5px solid #d3d1c7;
+  border-radius: 8px; padding: 7px 12px;
+  font-size: 0.78rem; cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+  width: 100%;
+}
+.node:hover { border-color: #534AB7; box-shadow: 0 0 0 2px #EEEDFE; }
+.node.active { border-color: #534AB7; background: #EEEDFE; }
+.node-num { background: #534AB7; color: #fff; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 600; flex-shrink: 0; }
+.node-num.green { background: #1D9E75; }
+.node-num.amber { background: #BA7517; }
+.node-num.red { background: #A32D2D; }
+.node-text { font-size: 0.78rem; color: #26215C; font-weight: 500; line-height: 1.3; }
+.node-sub { font-size: 0.7rem; color: #888780; }
+
+.arrow-row { display: grid; grid-template-columns: 130px 1fr 130px; height: 20px; }
+.arrow-cell { display: flex; align-items: center; justify-content: center; font-size: 0.9rem; color: #888780; }
+.arrow-cell.req { color: #534AB7; }
+.arrow-cell.res { color: #1D9E75; }
+.arrow-cell.internal { color: #BA7517; }
+
+.divider { height: 1px; background: #e8e6e0; margin: 0.25rem 0; grid-column: 1/-1; }
+
+.full-row { grid-column: 2 / 3; }
+
+/* ---- STEPS ---- */
+.step-section { margin-bottom: 2rem; }
+.step-section h2 { font-size: 0.9rem; font-weight: 500; color: #888780; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 0.5px solid #d3d1c7; }
+
+.step-card {
+  background: #fff; border: 0.5px solid #d3d1c7; border-radius: 12px;
+  margin-bottom: 1rem; overflow: hidden;
+  transition: border-color 0.15s;
+}
+.step-card.highlighted { border-color: #534AB7; }
+
+.step-header {
+  display: flex; align-items: flex-start; gap: 1rem;
+  padding: 1rem 1.25rem; cursor: pointer;
+}
+.step-header:hover { background: #faf9f7; }
+
+.step-num-big {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: #534AB7; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 600; flex-shrink: 0; margin-top: 1px;
+}
+.step-num-big.green { background: #1D9E75; }
+.step-num-big.amber { background: #BA7517; }
+.step-num-big.teal { background: #0F6E56; }
+
+.step-meta { flex: 1; }
+.step-title { font-size: 0.95rem; font-weight: 500; color: #26215C; margin-bottom: 2px; }
+.step-where { font-size: 0.75rem; color: #888780; font-family: monospace; }
+.step-chevron { font-size: 0.7rem; color: #888780; transition: transform 0.2s; margin-top: 8px; }
+.step-card.open .step-chevron { transform: rotate(180deg); }
+
+.step-body { display: none; padding: 0 1.25rem 1.25rem; border-top: 0.5px solid #f1efe8; }
+.step-card.open .step-body { display: block; }
+
+p { font-size: 0.87rem; color: #444441; margin: 0.65rem 0 0; line-height: 1.6; }
+code { background: #f1efe8; border-radius: 4px; padding: 0.1em 0.4em; font-family: monospace; font-size: 0.82em; color: #26215C; }
+
+/* Annotated code table */
+.acode { background: #f1efe8; border-radius: 8px; margin: 0.75rem 0; overflow-x: auto; }
+.acode table { width: 100%; border-collapse: collapse; }
+.acode tr { border-bottom: 0.5px solid #e3e1d9; }
+.acode tr:last-child { border-bottom: none; }
+.acode tr:hover { background: #e9e7df; }
+.acode .cl { padding: 0.28rem 1rem; white-space: pre; color: #26215C; font-family: monospace; font-size: 0.8rem; vertical-align: top; width: 52%; }
+.acode .cn { padding: 0.28rem 1rem; font-size: 0.76rem; color: #5f5e5a; font-family: system-ui; vertical-align: top; border-left: 0.5px solid #d3d1c7; line-height: 1.5; }
+.acode .cn.hi { color: #185FA5; font-weight: 500; }
+.acode .cn.ok { color: #0F6E56; font-weight: 500; }
+.acode .cn.warn { color: #854F0B; font-weight: 500; }
+.acode .hl { background: #ddd9f7; }
+
+.tip { background: #E1F5EE; border-left: 3px solid #1D9E75; border-radius: 0 8px 8px 0; padding: 0.6rem 1rem; margin-top: 0.75rem; font-size: 0.83rem; color: #085041; }
+.warn-box { background: #FAEEDA; border-left: 3px solid #EF9F27; border-radius: 0 8px 8px 0; padding: 0.6rem 1rem; margin-top: 0.75rem; font-size: 0.83rem; color: #633806; }
+.info-box { background: #E6F1FB; border-left: 3px solid #378ADD; border-radius: 0 8px 8px 0; padding: 0.6rem 1rem; margin-top: 0.75rem; font-size: 0.83rem; color: #042C53; }
+
+.payload-viz {
+  background: #26215C; border-radius: 8px; padding: 1rem;
+  margin: 0.75rem 0; font-family: monospace; font-size: 0.8rem;
+  display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;
+}
+.jwt-part { padding: 4px 10px; border-radius: 6px; color: #fff; font-size: 0.78rem; }
+.jwt-header { background: #E24B4A; color: #fff; }
+.jwt-payload { background: #1D9E75; color: #fff; }
+.jwt-sig { background: #534AB7; color: #fff; }
+.jwt-dot { color: #AFA9EC; font-size: 1.1rem; }
+
+.data-flow {
+  display: flex; gap: 0; margin: 0.75rem 0; border: 0.5px solid #d3d1c7; border-radius: 8px; overflow: hidden;
+}
+.df-block { flex: 1; padding: 0.6rem 0.75rem; border-right: 0.5px solid #d3d1c7; }
+.df-block:last-child { border-right: none; }
+.df-label { font-size: 0.68rem; color: #888780; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.2rem; }
+.df-val { font-size: 0.8rem; font-family: monospace; color: #26215C; font-weight: 500; }
+
+ul { padding-left: 1.1rem; margin-top: 0.5rem; }
+li { font-size: 0.86rem; color: #444441; margin-bottom: 0.3rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Login Flow — Debug completo</h1>
+  <p>Desde que el usuario hace click en "Entrar" hasta que ve el home</p>
+</header>
+
+<main>
+
+<!-- DIAGRAM -->
+<div class="diagram-scroll">
+<div class="diagram">
+
+  <!-- Layer headers -->
+  <div style="display:grid; grid-template-columns:130px 1fr 130px; gap:8px; margin-bottom:8px;">
+    <div class="layer-label">🌐 Browser</div>
+    <div class="layer-label" style="text-align:center">⚡ FastAPI — Python</div>
+    <div class="layer-label">🗄️ SQLite</div>
+  </div>
+
+  <!-- Flow rows -->
+  <div class="flow">
+
+    <!-- Step 1 -->
+    <div class="flow-row">
+      <div class="lane lane-l" style="justify-content:flex-start; padding-left:8px;">
+        <div class="node" onclick="jumpTo(1)" id="n1">
+          <div class="node-num">1</div>
+          <div><div class="node-text">Form submit</div><div class="node-sub">login.html</div></div>
+        </div>
+      </div>
+      <div class="lane"></div>
+      <div class="lane lane-r"></div>
+    </div>
+
+    <!-- arrow 1→2 -->
+    <div class="arrow-row">
+      <div class="arrow-cell req">──────────────── POST /login ────────────────────────────────────→</div>
+      <div class="arrow-cell"></div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="flow-row">
+      <div class="lane lane-l"></div>
+      <div class="lane" style="justify-content:flex-start; padding-left:8px;">
+        <div class="node" onclick="jumpTo(2)" id="n2">
+          <div class="node-num">2</div>
+          <div><div class="node-text">Router recibe el request</div><div class="node-sub">routers/auth.py → login()</div></div>
+        </div>
+      </div>
+      <div class="lane lane-r"></div>
+    </div>
+
+    <!-- arrow 2→3 internal -->
+    <div class="arrow-row">
+      <div class="arrow-cell"></div>
+      <div class="arrow-cell internal" style="justify-content:flex-start; padding-left:40px;">↓ llama a authenticate_user()</div>
+      <div class="arrow-cell"></div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="flow-row">
+      <div class="lane lane-l"></div>
+      <div class="lane" style="justify-content:flex-start; padding-left:8px;">
+        <div class="node" onclick="jumpTo(3)" id="n3">
+          <div class="node-num amber">3</div>
+          <div><div class="node-text">Busca el usuario</div><div class="node-sub">services.py → authenticate_user()</div></div>
+        </div>
+      </div>
+      <div class="lane lane-r"></div>
+    </div>
+
+    <!-- arrow 3→DB -->
+    <div class="arrow-row">
+      <div class="arrow-cell"></div>
+      <div class="arrow-cell req" style="justify-content:flex-end; padding-right:8px;">SELECT * FROM user WHERE username = 'admin' ──→</div>
+      <div class="arrow-cell req">↓</div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="flow-row">
+      <div class="lane lane-l"></div>
+      <div class="lane"></div>
+      <div class="lane lane-r" style="justify-content:flex-end; padding-right:8px;">
+        <div class="node" onclick="jumpTo(4)" id="n4">
+          <div class="node-num amber">4</div>
+          <div><div class="node-text">Devuelve User</div><div class="node-sub">database.db</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- arrow DB→5 -->
+    <div class="arrow-row">
+      <div class="arrow-cell"></div>
+      <div class="arrow-cell res" style="justify-content:flex-end; padding-right:8px;">← User(id=1, username="admin", hashed_password="$argon2...")</div>
+      <div class="arrow-cell res">↑</div>
+    </div>
+
+    <!-- Step 5 -->
+    <div class="flow-row">
+      <div class="lane lane-l"></div>
+      <div class="lane" style="justify-content:flex-start; padding-left:8px;">
+        <div class="node" onclick="jumpTo(5)" id="n5">
+          <div class="node-num">5</div>
+          <div><div class="node-text">verify_password()</div><div class="node-sub">security.py — argon2 hash check</div></div>
+        </div>
+      </div>
+      <div class="lane lane-r"></div>
+    </div>
+
+    <!-- arrow 5→6 -->
+    <div class="arrow-row">
+      <div class="arrow-cell"></div>
+      <div class="arrow-cell internal" style="justify-content:flex-start; padding-left:40px;">↓ contraseña válida → create_access_token()</div>
+      <div class="arrow-cell"></div>
+    </div>
+
+    <!-- Step 6 -->
+    <div class="flow-row">
+      <div class="lane lane-l"></div>
+      <div class="lane" style="justify-content:flex-start; padding-left:8px;">
+        <div class="node" onclick="jumpTo(6)" id="n6">
+          <div class="node-num green">6</div>
+          <div><div class="node-text">Genera el JWT</div><div class="node-sub">security.py — create_access_token()</div></div>
+        </div>
+      </div>
+      <div class="lane lane-r"></div>
+    </div>
+
+    <!-- arrow 6→browser -->
+    <div class="arrow-row">
+      <div class="arrow-cell res">←────────────── 200 OK {access_token: "eyJ..."} ─────────────────</div>
+      <div class="arrow-cell"></div>
+    </div>
+
+    <!-- Step 7 -->
+    <div class="flow-row">
+      <div class="lane lane-l" style="justify-content:flex-start; padding-left:8px;">
+        <div class="node" onclick="jumpTo(7)" id="n7">
+          <div class="node-num green">7</div>
+          <div><div class="node-text">Guarda token</div><div class="node-sub">localStorage</div></div>
+        </div>
+      </div>
+      <div class="lane"></div>
+      <div class="lane lane-r"></div>
+    </div>
+
+    <!-- arrow 7→8 -->
+    <div class="arrow-row">
+      <div class="arrow-cell req">── redirect → GET /home ──────────────────────────────────────→</div>
+      <div class="arrow-cell"></div>
+    </div>
+
+    <!-- Step 8 -->
+    <div class="flow-row">
+      <div class="lane lane-l"></div>
+      <div class="lane" style="justify-content:flex-start; padding-left:8px;">
+        <div class="node" onclick="jumpTo(8)" id="n8">
+          <div class="node-num green">8</div>
+          <div><div class="node-text">Sirve home.html</div><div class="node-sub">main.py → home_page()</div></div>
+        </div>
+      </div>
+      <div class="lane lane-r"></div>
+    </div>
+
+    <!-- arrow 8→browser -->
+    <div class="arrow-row">
+      <div class="arrow-cell res">←────────────── 200 OK  home.html ───────────────────────────</div>
+      <div class="arrow-cell"></div>
+    </div>
+
+    <!-- Step 9 -->
+    <div class="flow-row">
+      <div class="lane lane-l" style="justify-content:flex-start; padding-left:8px;">
+        <div class="node" onclick="jumpTo(9)" id="n9">
+          <div class="node-num">9</div>
+          <div><div class="node-text">home.js arranca</div><div class="node-sub">lee JWT + carga datos</div></div>
+        </div>
+      </div>
+      <div class="lane"></div>
+      <div class="lane lane-r"></div>
+    </div>
+
+    <!-- arrow 9→API -->
+    <div class="arrow-row">
+      <div class="arrow-cell req">── GET /users/me + /users/ + /items/ (con Bearer token) ──────→</div>
+      <div class="arrow-cell"></div>
+    </div>
+
+    <!-- Step 10 -->
+    <div class="flow-row">
+      <div class="lane lane-l" style="justify-content:flex-start; padding-left:8px;">
+        <div class="node" onclick="jumpTo(10)" id="n10">
+          <div class="node-num green">10</div>
+          <div><div class="node-text">Home renderizado</div><div class="node-sub">tablas + panel admin si aplica</div></div>
+        </div>
+      </div>
+      <div class="lane"></div>
+      <div class="lane lane-r"></div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- STEPS DETAIL -->
+<div class="step-section">
+  <h2>Detalle de cada paso</h2>
+
+  <!-- STEP 1 -->
+  <div class="step-card open" id="step1">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num-big">1</div>
+      <div class="step-meta">
+        <div class="step-title">El usuario hace click en "Entrar"</div>
+        <div class="step-where">templates/login.html — event listener en el form</div>
+      </div>
+      <div class="step-chevron">▼</div>
+    </div>
+    <div class="step-body">
+      <p>El browser dispara el evento <code>submit</code> del form. El JS lo intercepta con <code>addEventListener</code> y llama a <code>e.preventDefault()</code> para evitar el comportamiento por defecto (que recargaría la página).</p>
+      <div class="acode"><table>
+        <tr><td class="cl">document.getElementById('login-form')</td><td class="cn hi">selecciona el elemento form del HTML</td></tr>
+        <tr><td class="cl">  .addEventListener('submit', async (e) => {</td><td class="cn">registra una función asíncrona para el evento submit</td></tr>
+        <tr class="hl"><td class="cl">    e.preventDefault();</td><td class="cn hi">CLAVE: evita que el form recargue la página. Sin esto, el JS nunca correría.</td></tr>
+        <tr><td class="cl">    const formData = new URLSearchParams();</td><td class="cn warn">URLSearchParams en vez de JSON — el endpoint /login usa OAuth2 que espera application/x-www-form-urlencoded, no JSON</td></tr>
+        <tr><td class="cl">    formData.append('username', ...);</td><td class="cn">agrega username al body del request</td></tr>
+        <tr><td class="cl">    formData.append('password', ...);</td><td class="cn">agrega password al body del request</td></tr>
+      </table></div>
+      <div class="warn-box">⚠️ El endpoint <code>/login</code> usa <code>OAuth2PasswordRequestForm</code> de FastAPI, que espera los datos como <code>application/x-www-form-urlencoded</code> (como un form HTML clásico), <strong>no como JSON</strong>. Por eso se usa <code>URLSearchParams</code> y no <code>JSON.stringify</code>.</div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step-card" id="step2">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num-big">2</div>
+      <div class="step-meta">
+        <div class="step-title">FastAPI recibe el POST /login</div>
+        <div class="step-where">routers/auth.py — función login()</div>
+      </div>
+      <div class="step-chevron">▼</div>
+    </div>
+    <div class="step-body">
+      <p>FastAPI matchea la ruta y valida automáticamente el body con <code>OAuth2PasswordRequestForm</code>. También inyecta la sesión de DB via <code>Depends(get_session)</code> antes de llamar a la función.</p>
+      <div class="acode"><table>
+        <tr><td class="cl">@router.post("/login")</td><td class="cn">ruta registrada en el router de auth, sin prefix</td></tr>
+        <tr><td class="cl">def login(</td><td class="cn"></td></tr>
+        <tr class="hl"><td class="cl">    form_data: OAuth2PasswordRequestForm = Depends(),</td><td class="cn hi">FastAPI extrae username y password del body automáticamente</td></tr>
+        <tr class="hl"><td class="cl">    session: Session = Depends(get_session),</td><td class="cn hi">inyecta una sesión de DB — se crea y cierra automáticamente</td></tr>
+        <tr><td class="cl">):</td><td class="cn"></td></tr>
+        <tr><td class="cl">    user = authenticate_user(</td><td class="cn">delega la verificación al service</td></tr>
+        <tr><td class="cl">        form_data.username,</td><td class="cn">el username que mandó el form</td></tr>
+        <tr><td class="cl">        form_data.password,</td><td class="cn">la password en texto plano que mandó el form</td></tr>
+        <tr><td class="cl">        session</td><td class="cn">la sesión de DB inyectada</td></tr>
+        <tr><td class="cl">    )</td><td class="cn"></td></tr>
+        <tr><td class="cl">    if not user:</td><td class="cn warn">si authenticate_user devuelve None → 401</td></tr>
+        <tr><td class="cl">        raise HTTPException(status_code=401, ...)</td><td class="cn"></td></tr>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="step-card" id="step3">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num-big amber">3</div>
+      <div class="step-meta">
+        <div class="step-title">Busca el usuario en la DB</div>
+        <div class="step-where">services.py — authenticate_user()</div>
+      </div>
+      <div class="step-chevron">▼</div>
+    </div>
+    <div class="step-body">
+      <p>La función hace una query SQL para buscar al usuario por username. Si no existe, devuelve <code>None</code> sin revelar si el problema es el username o la password (evita enumerar usuarios).</p>
+      <div class="acode"><table>
+        <tr><td class="cl">def authenticate_user(username, password, session):</td><td class="cn"></td></tr>
+        <tr class="hl"><td class="cl">    statement = select(User).where(User.username == username)</td><td class="cn hi">genera: SELECT * FROM user WHERE username = 'admin'</td></tr>
+        <tr><td class="cl">    user = session.exec(statement).first()</td><td class="cn">ejecuta la query y toma el primer resultado (o None)</td></tr>
+        <tr><td class="cl">    if not user:</td><td class="cn warn">usuario no encontrado → devuelve None (no revela qué falló)</td></tr>
+        <tr><td class="cl">        return None</td><td class="cn"></td></tr>
+        <tr><td class="cl">    if not verify_password(password, user.hashed_password):</td><td class="cn warn">password incorrecta → devuelve None</td></tr>
+        <tr><td class="cl">        return None</td><td class="cn"></td></tr>
+        <tr><td class="cl">    return user</td><td class="cn ok">todo OK → devuelve el objeto User</td></tr>
+      </table></div>
+      <div class="data-flow">
+        <div class="df-block"><div class="df-label">Entra</div><div class="df-val">username="admin"<br>password="admin"</div></div>
+        <div class="df-block"><div class="df-label">Query SQL</div><div class="df-val">SELECT * FROM user<br>WHERE username='admin'</div></div>
+        <div class="df-block"><div class="df-label">Sale</div><div class="df-val">User(id=1,<br>username="admin", ...)</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="step-card" id="step4">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num-big amber">4</div>
+      <div class="step-meta">
+        <div class="step-title">SQLite devuelve el registro</div>
+        <div class="step-where">database.db — tabla user</div>
+      </div>
+      <div class="step-chevron">▼</div>
+    </div>
+    <div class="step-body">
+      <p>SQLite ejecuta la query y devuelve la fila. SQLModel la convierte automáticamente al objeto <code>User</code>. El campo clave que se va a usar es <code>hashed_password</code>.</p>
+      <div class="data-flow">
+        <div class="df-block"><div class="df-label">id</div><div class="df-val">1</div></div>
+        <div class="df-block"><div class="df-label">username</div><div class="df-val">admin</div></div>
+        <div class="df-block"><div class="df-label">role</div><div class="df-val">admin</div></div>
+        <div class="df-block"><div class="df-label">hashed_password</div><div class="df-val">$argon2id$v=19...</div></div>
+      </div>
+      <div class="info-box">El <code>hashed_password</code> nunca se compara directamente con la password que mandó el usuario. Se usa la función <code>verify_password</code> que recalcula el hash y lo compara de forma segura.</div>
+    </div>
+  </div>
+
+  <!-- STEP 5 -->
+  <div class="step-card" id="step5">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num-big">5</div>
+      <div class="step-meta">
+        <div class="step-title">Verifica la contraseña con argon2</div>
+        <div class="step-where">security.py — verify_password()</div>
+      </div>
+      <div class="step-chevron">▼</div>
+    </div>
+    <div class="step-body">
+      <p>La librería <code>pwdlib</code> usa el algoritmo <strong>argon2</strong> para verificar la password. Argon2 es el algoritmo ganador del Password Hashing Competition (2015) — resistente a ataques de GPU y rainbow tables.</p>
+      <div class="acode"><table>
+        <tr><td class="cl">password_hash = PasswordHash.recommended()</td><td class="cn hi">usa el algoritmo recomendado (argon2id)</td></tr>
+        <tr><td class="cl"></td><td class="cn"></td></tr>
+        <tr><td class="cl">def verify_password(plain_pw, hashed_pw):</td><td class="cn"></td></tr>
+        <tr class="hl"><td class="cl">    return password_hash.verify(plain_pw, hashed_pw)</td><td class="cn hi">hashea "admin" con el mismo salt del hash guardado y compara. Si coincide → True</td></tr>
+      </table></div>
+      <div class="tip">✅ Nunca se guarda la password en texto plano. El hash incluye un <em>salt</em> único, así que aunque dos usuarios tengan la misma password, sus hashes son diferentes.</div>
+    </div>
+  </div>
+
+  <!-- STEP 6 -->
+  <div class="step-card" id="step6">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num-big green">6</div>
+      <div class="step-meta">
+        <div class="step-title">Genera el JWT y lo devuelve</div>
+        <div class="step-where">security.py — create_access_token() → routers/auth.py</div>
+      </div>
+      <div class="step-chevron">▼</div>
+    </div>
+    <div class="step-body">
+      <p>Se crea el token con el username, el rol y la fecha de expiración. Se firma con la <code>SECRET_KEY</code> usando HS256.</p>
+      <div class="acode"><table>
+        <tr><td class="cl">def create_access_token(data: dict):</td><td class="cn"></td></tr>
+        <tr><td class="cl">    to_encode = data.copy()</td><td class="cn">copia el dict para no mutarlo</td></tr>
+        <tr class="hl"><td class="cl">    expire = datetime.now(timezone.utc) + timedelta(minutes=30)</td><td class="cn hi">expiración: 30 minutos desde ahora (leído de la env var)</td></tr>
+        <tr><td class="cl">    to_encode.update({"exp": expire})</td><td class="cn">agrega la expiración al payload</td></tr>
+        <tr class="hl"><td class="cl">    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm="HS256")</td><td class="cn hi">firma el token con la SECRET_KEY</td></tr>
+        <tr><td class="cl">    return encoded_jwt</td><td class="cn ok">devuelve el string "eyJ..."</td></tr>
+      </table></div>
+
+      <p>El token que se genera tiene esta estructura:</p>
+      <div class="payload-viz">
+        <span class="jwt-part jwt-header">{"alg":"HS256","typ":"JWT"}</span>
+        <span class="jwt-dot">.</span>
+        <span class="jwt-part jwt-payload">{"sub":"admin","role":"admin","exp":1749...}</span>
+        <span class="jwt-dot">.</span>
+        <span class="jwt-part jwt-sig">HMAC-SHA256(header+payload, SECRET_KEY)</span>
+      </div>
+
+      <p>El router devuelve:</p>
+      <div class="acode"><table>
+        <tr><td class="cl">return {"access_token": access_token, "token_type": "bearer"}</td><td class="cn ok">200 OK — el browser recibe este JSON</td></tr>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- STEP 7 -->
+  <div class="step-card" id="step7">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num-big green">7</div>
+      <div class="step-meta">
+        <div class="step-title">El browser guarda el token y redirige</div>
+        <div class="step-where">login.html — script JS</div>
+      </div>
+      <div class="step-chevron">▼</div>
+    </div>
+    <div class="step-body">
+      <div class="acode"><table>
+        <tr><td class="cl">const data = await response.json();</td><td class="cn">parsea el JSON: {access_token: "eyJ...", token_type: "bearer"}</td></tr>
+        <tr class="hl"><td class="cl">localStorage.setItem('token', data.access_token);</td><td class="cn hi">guarda el token en el storage del browser — persiste entre pestañas y recargas</td></tr>
+        <tr class="hl"><td class="cl">window.location.href = '/home';</td><td class="cn hi">navega a /home — el browser hace un GET /home nuevo</td></tr>
+      </table></div>
+      <div class="warn-box">⚠️ Guardar el JWT en <code>localStorage</code> es funcional pero vulnerable a XSS. En producción, la alternativa más segura son cookies <code>httpOnly</code> (no accesibles por JS). Para este challenge está bien.</div>
+    </div>
+  </div>
+
+  <!-- STEP 8 -->
+  <div class="step-card" id="step8">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num-big green">8</div>
+      <div class="step-meta">
+        <div class="step-title">FastAPI sirve el home.html</div>
+        <div class="step-where">main.py — home_page()</div>
+      </div>
+      <div class="step-chevron">▼</div>
+    </div>
+    <div class="step-body">
+      <p>El browser hace <code>GET /home</code>. FastAPI matchea la ruta y devuelve el template renderizado por Jinja2. No hay lógica de autenticación acá — la autenticación la maneja el JS del lado del cliente.</p>
+      <div class="acode"><table>
+        <tr><td class="cl">@app.get("/home")</td><td class="cn"></td></tr>
+        <tr><td class="cl">def home_page(request: Request):</td><td class="cn">no tiene Depends(get_current_user) — no verifica JWT acá</td></tr>
+        <tr class="hl"><td class="cl">    return templates.TemplateResponse(request=request, name="home.html")</td><td class="cn hi">sirve el archivo home.html como HTML estático</td></tr>
+      </table></div>
+      <p>El home.html carga a su vez el archivo <code>/static/home.css</code> y el script <code>home.js</code> inline.</p>
+      <div class="info-box">La verificación de que el usuario está logueado la hace el JS: si no hay token en <code>localStorage</code>, redirige a <code>/</code> inmediatamente. No es tan seguro como un middleware de servidor, pero funciona para este caso.</div>
+    </div>
+  </div>
+
+  <!-- STEP 9 -->
+  <div class="step-card" id="step9">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num-big">9</div>
+      <div class="step-meta">
+        <div class="step-title">home.js arranca: lee el JWT y carga datos</div>
+        <div class="step-where">static/home.js — inicialización</div>
+      </div>
+      <div class="step-chevron">▼</div>
+    </div>
+    <div class="step-body">
+      <p>Cuando el HTML termina de cargar, el script corre en orden. Primero verifica que hay token, después lo decodifica y por último carga los datos de la API.</p>
+      <div class="acode"><table>
+        <tr class="hl"><td class="cl">const token = localStorage.getItem('token');</td><td class="cn hi">lee el token que guardamos en el paso 7</td></tr>
+        <tr><td class="cl">if (!token) { window.location.href = '/'; }</td><td class="cn warn">si no hay token → redirige al login. Protege la página.</td></tr>
+        <tr><td class="cl"></td><td class="cn"></td></tr>
+        <tr><td class="cl">const headers = { 'Authorization': `Bearer ${token}` };</td><td class="cn">prepara el header que se manda en cada fetch</td></tr>
+        <tr><td class="cl"></td><td class="cn"></td></tr>
+        <tr class="hl"><td class="cl">const payload = JSON.parse(atob(token.split('.')[1]));</td><td class="cn hi">decodifica el payload del JWT sin request al servidor:<br>split('.') → toma parte 2 → base64 decode → JSON.parse</td></tr>
+        <tr><td class="cl">// payload = {sub:"admin", role:"admin", exp:...}</td><td class="cn"></td></tr>
+        <tr><td class="cl"></td><td class="cn"></td></tr>
+        <tr><td class="cl">document.getElementById('username-display').textContent = payload.sub;</td><td class="cn">muestra "admin" en el bienvenido</td></tr>
+        <tr class="hl"><td class="cl">if (payload.role === 'admin') {</td><td class="cn hi">si el rol es admin → muestra el panel de administración</td></tr>
+        <tr><td class="cl">    document.getElementById('admin-controls').style.display = 'block';</td><td class="cn">el div admin-controls está hidden por defecto con style="display:none"</td></tr>
+        <tr><td class="cl">}</td><td class="cn"></td></tr>
+        <tr><td class="cl"></td><td class="cn"></td></tr>
+        <tr class="hl"><td class="cl">loadMe().then(() => Promise.all([loadUsers(), loadItems()]));</td><td class="cn hi">1) loadMe() obtiene el id del usuario logueado<br>2) cuando termina, lanza loadUsers() y loadItems() en paralelo</td></tr>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- STEP 10 -->
+  <div class="step-card" id="step10">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num-big green">10</div>
+      <div class="step-meta">
+        <div class="step-title">El home queda renderizado</div>
+        <div class="step-where">Browser — DOM actualizado con datos de la API</div>
+      </div>
+      <div class="step-chevron">▼</div>
+    </div>
+    <div class="step-body">
+      <p>Los tres fetch que corre home.js en este orden:</p>
+      <div class="data-flow" style="margin-top:0.75rem">
+        <div class="df-block"><div class="df-label">1. loadMe()</div><div class="df-val">GET /users/me<br>→ guarda _myUserId</div></div>
+        <div class="df-block"><div class="df-label">2. loadUsers()</div><div class="df-val">GET /users/<br>→ llena la tabla</div></div>
+        <div class="df-block"><div class="df-label">3. loadItems()</div><div class="df-val">GET /items/ +<br>/users/{id}/items/count</div></div>
+      </div>
+      <p>Cada uno de esos requests llega a FastAPI con el header <code>Authorization: Bearer eyJ...</code>. FastAPI llama a <code>get_current_user</code> que:</p>
+      <ul>
+        <li>Decodifica el JWT con la <code>SECRET_KEY</code></li>
+        <li>Extrae el <code>sub</code> (username)</li>
+        <li>Hace un <code>SELECT</code> para obtener el usuario de la DB</li>
+        <li>Devuelve el objeto <code>User</code> al endpoint</li>
+      </ul>
+      <div class="tip">✅ El home muestra: tabla de usuarios, panel de admin (solo si rol=admin), lista de items del usuario logueado y el contador de items.</div>
+    </div>
+  </div>
+
+</div>
+</main>
+
+<script>
+function toggleStep(header) {
+  const card = header.parentElement;
+  card.classList.toggle('open');
+}
+
+function jumpTo(n) {
+  // highlight node in diagram
+  document.querySelectorAll('.node').forEach(nd => nd.classList.remove('active'));
+  const node = document.getElementById('n' + n);
+  if (node) node.classList.add('active');
+
+  // open that step card
+  const card = document.getElementById('step' + n);
+  if (card) {
+    document.querySelectorAll('.step-card').forEach(c => c.classList.remove('open', 'highlighted'));
+    card.classList.add('open', 'highlighted');
+    setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+  }
+}
+
+// open all by default on load
+document.querySelectorAll('.step-card').forEach(c => c.classList.remove('open'));
+document.getElementById('step1').classList.add('open');
+</script>
+</body>
+</html>

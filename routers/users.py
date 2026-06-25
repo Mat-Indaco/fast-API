@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Depends, Query, HTTPException
 from typing import Annotated
-from db import SessionDep
-from sqlalchemy import func
-from schemas import UserCreate, UserRead, UserUpdate
-from services import create_user, read_user
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import select
-from models import User, Item
+
+from db import SessionDep
+from models import User
+from schemas import UserCreate, UserRead, UserUpdate
 from security import get_current_user, require_admin
+from services import create_user, read_user
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -73,23 +74,6 @@ def delete_user(
     session.delete(user)
     session.commit()
     return {"ok": True}
-
-
-@router.get("/{user_id}/items/count")
-def count_user_items(
-    user_id: int,
-    session: SessionDep,
-    current_user: User = Depends(get_current_user),
-):
-    user = session.get(User, user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    count = session.exec(
-        select(func.sum(Item.cant)).where(Item.owner_id == user_id)
-    ).one()
-
-    return {"user_id": user_id, "username": user.username, "item_count": count or 0}
 
 
 @router.patch("/{user_id}", response_model=UserRead)
